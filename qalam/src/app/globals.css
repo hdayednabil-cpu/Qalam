@@ -1,0 +1,169 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Fraunces Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+
+  /* Warm travertine paper + walnut ink -- inspired by a book-lined atrium at golden hour */
+  --color-paper: #f7f2e7;
+  --color-surface: #fffcf6;
+  --color-line: #e8dfcc;
+  --color-mute: #7d7360;
+
+  --color-ink-50: #f4efe4;
+  --color-ink-100: #e6dbc4;
+  --color-ink-200: #cdb996;
+  --color-ink-300: #ab8f68;
+  --color-ink-400: #856a49;
+  --color-ink-500: #664f36;
+  --color-ink-600: #4f3c29;
+  --color-ink-700: #3c2d1f;
+  --color-ink-800: #2c2117;
+  --color-ink-900: #1f1810;
+  --color-ink-950: #140f0a;
+
+  /* Brass / gold accent -- the reading-lamp and orrery metal */
+  --color-saffron-100: #f8ecd2;
+  --color-saffron-200: #f0dba6;
+  --color-saffron-300: #e2bf6e;
+  --color-saffron-400: #cd9d43;
+  --color-saffron-500: #b17f2c;
+  --color-saffron-600: #8c6323;
+  --color-saffron-700: #6c4b1b;
+
+  /* Terracotta / ember -- warmer than a cold coral, reads as a lit alarm not a stop sign */
+  --color-coral-100: #f8e3da;
+  --color-coral-300: #e7a488;
+  --color-coral-500: #c6603c;
+  --color-coral-600: #a94b2c;
+  --color-coral-700: #863a22;
+
+  /* Sage -- the reading-chair upholstery and potted greenery */
+  --color-moss-100: #e6ebde;
+  --color-moss-300: #b3c39d;
+  --color-moss-500: #718a5a;
+  --color-moss-600: #576b44;
+  --color-moss-700: #445436;
+
+  /* Dusk glass -- the misty view through the arched windows */
+  --color-sky-100: #e6ecec;
+  --color-sky-300: #a7bfc2;
+  --color-sky-500: #5c8286;
+  --color-sky-600: #486a6e;
+  --color-sky-700: #395457;
+
+  --shadow-card: 0 1px 2px rgba(31, 24, 16, 0.05), 0 10px 30px -12px rgba(31, 24, 16, 0.18);
+  --shadow-lift: 0 24px 60px -20px rgba(31, 24, 16, 0.35);
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+}
+
+html {
+  background: var(--color-paper);
+  color: var(--color-ink-900);
+  -webkit-font-smoothing: antialiased;
+}
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "ss01";
+}
+h1, h2, h3, .display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+input, select, textarea, button { font: inherit; }
+
+@utility card { @apply bg-surface rounded-2xl shadow-card border border-line/70; }
+@utility label { @apply text-xs font-medium tracking-wide uppercase text-mute; }
+@utility input { @apply w-full rounded-xl border border-line bg-surface px-3 py-2 text-[15px] text-ink-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-ink-300 focus:border-ink-400; }
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap; }
+@utility btn-primary { @apply btn bg-ink-800 text-white hover:bg-ink-700; }
+@utility btn-secondary { @apply btn bg-ink-50 text-ink-800 hover:bg-ink-100; }
+@utility btn-ghost { @apply btn text-ink-700 hover:bg-ink-50; }
+@utility btn-danger { @apply btn bg-coral-100 text-coral-700 hover:bg-coral-300/60; }
+@utility btn-accent { @apply btn bg-saffron-300 text-ink-900 hover:bg-saffron-400; }
+@utility btn-sm { @apply px-3! py-1.5! text-xs!; }
+
+/* Restrained scrollbars */
+* { scrollbar-width: thin; scrollbar-color: #d0c3a3 transparent; }
+
+/* Page-zoom for homework review */
+.zoomable { cursor: zoom-in; transition: transform 0.2s ease; }
+.zoomable:hover { transform: scale(1.01); }
+
+/* ---------------------------------------------------------------------- */
+/* Motion system -- an orrery of slow, deliberate movement.                */
+/* Every animation here is disabled under prefers-reduced-motion below.    */
+/* ---------------------------------------------------------------------- */
+
+@keyframes orrery-spin-cw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes orrery-spin-ccw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+@keyframes orrery-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.12); }
+}
+@keyframes ambient-drift-a {
+  0% { transform: translate(-4%, -2%) scale(1); }
+  50% { transform: translate(3%, 4%) scale(1.08); }
+  100% { transform: translate(-4%, -2%) scale(1); }
+}
+@keyframes ambient-drift-b {
+  0% { transform: translate(3%, 3%) scale(1.05); }
+  50% { transform: translate(-4%, -3%) scale(0.96); }
+  100% { transform: translate(3%, 3%) scale(1.05); }
+}
+@keyframes ambient-shimmer {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.6; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes gleam-sweep {
+  from { transform: translateX(-140%) skewX(-12deg); }
+  to { transform: translateX(140%) skewX(-12deg); }
+}
+
+.orrery-ring-1 { animation: orrery-spin-cw 34s linear infinite; transform-origin: 50% 50%; }
+.orrery-ring-2 { animation: orrery-spin-ccw 22s linear infinite; transform-origin: 50% 50%; }
+.orrery-ring-3 { animation: orrery-spin-cw 14s linear infinite; transform-origin: 50% 50%; }
+.orrery-core { animation: orrery-pulse 5s ease-in-out infinite; transform-origin: 50% 50%; }
+
+.ambient-blob-a { animation: ambient-drift-a 22s ease-in-out infinite; }
+.ambient-blob-b { animation: ambient-drift-b 26s ease-in-out infinite; }
+.ambient-shimmer { animation: ambient-shimmer 6s ease-in-out infinite; }
+
+.fade-up { animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.fade-up-1 { animation-delay: 0.06s; }
+.fade-up-2 { animation-delay: 0.14s; }
+.fade-up-3 { animation-delay: 0.22s; }
+.fade-up-4 { animation-delay: 0.3s; }
+
+.gleam {
+  position: relative;
+  overflow: hidden;
+}
+.gleam::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 40%, rgba(255, 255, 255, 0.18) 50%, transparent 60%);
+  animation: gleam-sweep 6s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orrery-ring-1, .orrery-ring-2, .orrery-ring-3, .orrery-core,
+  .ambient-blob-a, .ambient-blob-b, .ambient-shimmer,
+  .fade-up, .gleam::after {
+    animation: none !important;
+  }
+  .fade-up { opacity: 1; transform: none; }
+}
