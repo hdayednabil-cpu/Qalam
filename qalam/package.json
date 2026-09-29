@@ -12,6 +12,7 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:reset": "tsx src/db/reset.ts",
     "test": "vitest run",
+    "test:flow": "vitest run tests/homework-flow.test.ts",
     "test:storage:live": "vitest run --config vitest.storage.config.ts",
     "setup": "npm run db:reset"
   },

@@ -15,7 +15,7 @@ The remaining [RLS Enabled No Policy informational notices](https://supabase.com
 are intentional: this app uses its own server sessions, not Supabase Auth.
 Do not add anonymous browser policies just to remove these notices.
 
-## Prepared application changes (not yet deployed)
+## Application changes (preview verified; production release pending)
 
 - Use the private Supabase bucket for durable uploads and downloads. Local
   storage is development-only, and incomplete production configuration fails
@@ -49,9 +49,13 @@ Do not add anonymous browser policies just to remove these notices.
    DEMO_LOGINS=false. Keep the bucket private. Preview environments should use
    isolated test data rather than live student data.
 3. Tutor login, dashboard, students, curriculum and calendar were verified after
-   the live database change. Student/guardian sign-in still needs verification.
-   Preview-test upload, refresh/download, forbidden access and a full homework
-   submission. Merge only after this and the credential replacement are done.
+   the live database change. The isolated application-flow test verifies real
+   student/guardian/tutor login actions, sessions, multipart upload, submission,
+   a fresh sign-in and signed file retrieval, plus foreign-account denial.
+   Only the cookie adapter, Next cache invalidation and database location are
+   mocked; records and files are disposable local fixtures. Preview builds run
+   this flow followed by the separate real-cloud storage check. This is server
+   integration coverage, not a complete browser UI test.
 4. Production smoke test after deployment; retain the previous deployment for
    rollback. Do not undo database protections to roll back the application.
 
@@ -61,8 +65,10 @@ Do not add anonymous browser policies just to remove these notices.
   updated DATABASE_URL and reset the database password, then redeployed main.
   The new production deployment is READY. Its initial database authentication
   error cleared; the live login page and signed-in calendar load successfully.
-  The owner confirmed revocation of the old Supabase secret. The existing
-  tutor password still needs changing by the owner on the account screen.
+  The owner confirmed revocation of the old Supabase secret and changed the
+  tutor password through /account on preview. The prior live tutor session
+  now redirects to login; only a fresh tutor session remains in the database.
+  Runtime logs show no application errors during the change.
 - Preview builds now run an explicit live storage smoke check after the app
   builds. It inspects bucket privacy, writes one randomly named synthetic
   object using the application's storage functions, verifies the exact bytes,
@@ -73,7 +79,7 @@ Do not add anonymous browser policies just to remove these notices.
   intentionally configured server credentials; credentials are never logged.
 
 - Production build passed, including TypeScript checks.
-- 31 automated tests passed, covering existing access and homework flows,
+- 32 automated tests passed, covering existing access and homework flows,
   database browser-role denial and preserved owner access, file signatures,
   storage configuration, Supabase SDK HTTP calls (mocked network), upload
   authorization, oversized input, and storage/database failure paths.
@@ -87,7 +93,9 @@ Do not add anonymous browser policies just to remove these notices.
 - The owner securely signed in to the live tutor account. Dashboard, student
   list, curriculum and calendar render after the database protections. The
   curriculum Subject dropdown has zero options, confirming the setup blocker.
-  Student/guardian sign-in and live upload/submission are not yet verified.
+  Student/guardian login and submission are covered by the isolated server
+  integration test. Browser testing with real student accounts remains a
+  follow-up before onboarding families.
 
 ## Follow-up before broader use
 
