@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { ArrowUpRight, CalendarDays, Plus } from "lucide-react";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { getTutorDashboard } from "@/lib/queries";
 import { t } from "@/lib/i18n";
 import { formatDayLong, todayKey } from "@/lib/dates";
-import { Card, EmptyState, Stat, Avatar, LinkButton, Badge } from "@/components/ui";
+import { Card, EmptyState, Stat, Avatar, LinkButton, Badge, PageHeader } from "@/components/ui";
 import { SessionRow, HomeworkRow, TestRow, AlertList } from "@/components/items";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { nextStepAction } from "./actions";
@@ -16,11 +17,12 @@ export default async function TutorDashboard() {
   const d = await getTutorDashboard(getDb(), user);
   return (
     <div className="space-y-6">
-      <div className="fade-up">
-        <div className="label">{formatDayLong(todayKey())}</div>
-        <h1 className="text-2xl md:text-3xl font-semibold">{t("tutor.attention")}</h1>
-      </div>
-
+      <PageHeader eyebrow={formatDayLong(todayKey())} title={`Welcome back, ${user.displayName.split(" ")[0]}.`} subtitle="A clear view of your day. More space to focus on teaching." action={<LinkButton href="/tutor/students/new" variant="primary"><Plus size={16} /> Add student</LinkButton>} />
+      <section className="workspace-hero flex flex-col justify-between gap-6 rounded-2xl p-6 text-white sm:flex-row sm:items-center sm:p-7">
+        <div><div className="mb-3 flex items-center gap-2 text-[11px] font-medium uppercase tracking-widest text-ink-200"><CalendarDays size={15} /> Your teaching day</div><h2 className="text-2xl font-semibold">{d.todays.length ? `${d.todays.length} session${d.todays.length === 1 ? "" : "s"} on today’s calendar.` : "A little room to plan ahead."}</h2><p className="mt-2 max-w-md text-sm leading-relaxed text-slate-300">{d.todays.length ? "Your schedule, lesson notes and next steps, all in one place." : "Review your students’ work or get ready for the next lesson."}</p></div>
+        <Link href="/tutor/calendar" className="inline-flex w-fit shrink-0 items-center gap-4 rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-xs font-semibold hover:bg-white/10">Open calendar <ArrowUpRight size={16} /></Link>
+      </section>
+      <div className="flex items-center justify-between"><h2 className="text-sm font-bold">{t("tutor.attention")}</h2><span className="text-xs text-mute">Your priorities at a glance</span></div>
       <Stagger className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StaggerItem><Stat label={t("tutor.needsLogging")} value={d.needsLog.length} tone={d.needsLog.length ? "warn" : undefined} /></StaggerItem>
         <StaggerItem><Stat label={t("tutor.awaitingReview")} value={d.awaitingReview.length} tone={d.awaitingReview.length ? "warn" : undefined} /></StaggerItem>
@@ -28,7 +30,7 @@ export default async function TutorDashboard() {
         <StaggerItem><Stat label={t("common.package")} value={d.indicators.lowPackages} hint="running low" tone={d.indicators.lowPackages ? "warn" : undefined} /></StaggerItem>
       </Stagger>
 
-      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
         <Reveal className="space-y-6">
           <Card title={t("tutor.todaysSessions")} action={<LinkButton href="/tutor/calendar" variant="ghost">{t("nav.calendar")} →</LinkButton>}>
             {d.todays.length ? (
@@ -122,7 +124,7 @@ export default async function TutorDashboard() {
             ) : (
               <EmptyState>{t("empty.noSessions")}</EmptyState>
             )}
-            <div className="mt-3 flex gap-4 text-xs text-mute">
+            <div className="mt-4 flex flex-wrap gap-3 border-t border-line pt-4 text-xs text-mute">
               <span>
                 <Badge tone="success">{d.indicators.sessionsThisWeek}</Badge> {t("tutor.sessionsCompleted")} in the last 7 days
               </span>

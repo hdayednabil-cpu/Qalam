@@ -15,14 +15,14 @@ export default async function StudentsPage() {
     <div>
       <PageHeader title={t("tutor.allStudents")} subtitle={`${students.length} students · ${students.filter((s) => s.status === "active").length} active`} action={<LinkButton href="/tutor/students/new" variant="primary">+ {t("tutor.newStudent")}</LinkButton>} />
       {students.length ? (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-5 lg:grid-cols-2">
           {students.map((s) => (
-            <Link key={s.id} href={`/tutor/students/${s.id}`} className="card p-4 hover:border-ink-300 transition-colors">
+            <Link key={s.id} href={`/tutor/students/${s.id}`} className="card p-5 sm:p-6 hover:border-ink-300 hover:shadow-lift transition-[border-color,box-shadow]">
               <div className="flex items-start gap-3">
-                <Avatar name={s.fullName} hue={s.hue} size={44} />
+                <Avatar name={s.fullName} hue={s.hue} size={48} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold text-base">{s.fullName}</span>
+                    <span className="display font-bold text-lg">{s.fullName}</span>
                     {s.status !== "active" && <StatusBadge status={s.status} />}
                     {s.alerts.filter((a) => a.severity !== "info").length > 0 && <Badge tone="warn">{s.alerts.filter((a) => a.severity !== "info").length} alerts</Badge>}
                   </div>
@@ -34,7 +34,7 @@ export default async function StudentsPage() {
                     <span className="text-mute">{t("student.currentTopic")}: </span>
                     {s.currentTopic ?? "—"}
                   </div>
-                  <div className="mt-2 grid grid-cols-2 gap-3 text-xs text-mute">
+                  <div className="mt-5 grid grid-cols-2 gap-4 text-xs text-mute">
                     <Progress value={s.coverage} label={t("tutor.coverage")} />
                     <div>
                       {s.pkg ? (
@@ -53,7 +53,7 @@ export default async function StudentsPage() {
                     </div>
                   </div>
                   {s.nextSession && (
-                    <div className="mt-2 text-xs text-mute">
+                    <div className="mt-5 border-t border-line pt-4 text-xs text-mute">
                       Next: {formatDayShort(s.nextSession.startsAt)} {formatTime(s.nextSession.startsAt)}
                     </div>
                   )}
