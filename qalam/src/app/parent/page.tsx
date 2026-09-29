@@ -3,7 +3,7 @@ import { canSee } from "@/lib/access";
 import { strengths, weaknesses } from "@/lib/domain";
 import { t } from "@/lib/i18n";
 import { formatDayShort, formatTime, formatMonthYear, todayKey, relativeDays } from "@/lib/dates";
-import { Card, EmptyState, Stat, cx } from "@/components/ui";
+import { Card, EmptyState, Stat, cx, PageHeader } from "@/components/ui";
 import { HomeworkRow, RevisionRow, SessionRow, TopicChips } from "@/components/items";
 import { Reveal, Stagger, StaggerItem, MotionRing, MotionProgress } from "@/components/motion";
 import { currentChild } from "./child";
@@ -22,11 +22,7 @@ export default async function ParentHome() {
   return (
     <div className="space-y-6">
       <ChildSwitcher kids={kids} currentId={child.id} back="/parent" />
-      <div className="fade-up">
-        <h1 className="text-2xl md:text-3xl font-semibold">{t("parent.question", { name })}</h1>
-        <p className="text-mute">{ws.student.gradeYear} · {ws.student.school} · {ws.enrolments.map((e) => e.subject).join(", ")}</p>
-      </div>
-
+      <PageHeader eyebrow="The bigger picture" title={t("parent.question", { name })} subtitle={[ws.student.gradeYear, ws.student.school, ws.enrolments.map((e) => e.subject).join(", ")].filter(Boolean).join(" · ")} />
       <Stagger className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StaggerItem><Stat label={`${t("parent.monthOverview")} · ${monthLabel}`} value={ws.stats.sessionsThisMonth} hint={`${t("common.sessions").toLowerCase()} ${t("parent.completed")} · ${ws.stats.upcomingThisMonth} ${t("parent.upcoming")}`} /></StaggerItem>
         <StaggerItem><Stat label={t("parent.package")} value={ws.pkg ? ws.pkg.remaining : "—"} hint={ws.pkg ? `${t("common.of")} ${ws.pkg.total} ${t("common.remaining")}${ws.pkg.shared ? " (family)" : ""}` : "No active package"} tone={ws.pkg?.low ? "warn" : undefined} /></StaggerItem>

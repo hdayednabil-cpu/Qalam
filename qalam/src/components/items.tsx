@@ -9,8 +9,8 @@ import { REVISION_GLYPH } from "@/lib/domain";
 
 export function SessionRow({ s, href, showStudents = true, compact = false }: { s: SessionView; href?: string; showStudents?: boolean; compact?: boolean }) {
   const inner = (
-    <div className={cx("flex items-start gap-3", compact ? "py-2" : "py-3")}>
-      <div className="w-14 shrink-0 text-center">
+    <div className={cx("flex items-start gap-3", compact ? "py-3" : "py-4")}>
+      <div className="w-14 shrink-0 rounded-xl border border-line bg-paper py-2 text-center">
         <div className="text-xs text-mute">{formatDayShort(s.startsAt).split(" ")[0]}</div>
         <div className="text-lg font-semibold leading-tight tabular-nums display">{formatDayShort(s.startsAt).split(" ")[1]}</div>
         <div className="text-[11px] text-mute">{formatDayShort(s.startsAt).split(" ")[2]}</div>
@@ -36,7 +36,7 @@ export function SessionRow({ s, href, showStudents = true, compact = false }: { 
         {s.topics.length > 0 && !compact && (
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {s.topics.map((tp, i) => (
-              <span key={i} className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2 py-0.5 text-xs">
+              <span key={i} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-xs">
                 <MasteryDot level={tp.mastery} /> {tp.name}
               </span>
             ))}
@@ -58,7 +58,7 @@ export function HomeworkRow({ h, href, studentName }: { h: HomeworkView; href: s
   const dueIn = daysUntil(toDateKey(h.dueAt));
   const open = ["assigned", "in_progress", "corrections_requested", "overdue"].includes(h.effectiveStatus);
   return (
-    <Link href={href} className="flex items-start gap-3 rounded-xl -mx-2 px-2 py-3 hover:bg-ink-50/60">
+    <Link href={href} className="flex items-start gap-3 rounded-xl -mx-2 px-2 py-4 hover:bg-ink-50/60">
       <div className={cx("mt-0.5 size-8 shrink-0 rounded-lg grid place-items-center", h.effectiveStatus === "overdue" ? "bg-coral-100 text-coral-600" : h.effectiveStatus === "completed" ? "bg-moss-100 text-moss-600" : h.effectiveStatus === "submitted" || h.effectiveStatus === "resubmitted" ? "bg-saffron-100 text-saffron-600" : "bg-ink-50 text-ink-600")}>
         {h.effectiveStatus === "completed" ? <CheckCircle2 size={16} /> : h.priority === "high" ? <Flame size={16} /> : <Circle size={16} />}
       </div>
@@ -154,7 +154,7 @@ export function TopicChips({ topics, empty }: { topics: TopicView[]; empty?: str
   return (
     <div className="flex flex-wrap gap-1.5">
       {topics.map((tp) => (
-        <span key={tp.id} className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium">
+        <span key={tp.id} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium">
           <MasteryDot level={tp.mastery} /> {tp.name}
         </span>
       ))}

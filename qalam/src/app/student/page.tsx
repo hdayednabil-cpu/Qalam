@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Award, CheckCircle2, ArrowUpRight } from "lucide-react";
 import { getDb } from "@/db";
 import { getViewer } from "@/lib/auth";
 import { canSee } from "@/lib/access";
@@ -6,7 +7,7 @@ import { getWorkspace } from "@/lib/queries";
 import { strengths, weaknesses } from "@/lib/domain";
 import { t } from "@/lib/i18n";
 import { formatDayShort, formatTime, relativeDays, daysUntil, toDateKey } from "@/lib/dates";
-import { Card, EmptyState, LinkButton } from "@/components/ui";
+import { Card, EmptyState, LinkButton, PageHeader } from "@/components/ui";
 import { HomeworkRow, RevisionRow, TopicChips } from "@/components/items";
 import { Reveal, MotionRing, MotionProgress } from "@/components/motion";
 
@@ -24,11 +25,7 @@ export default async function StudentHome() {
   const notes = ws.feedback.filter((f) => canSee("student", f.visibility)).slice(0, 2);
   return (
     <div className="space-y-6">
-      <div className="fade-up">
-        <h1 className="text-2xl md:text-3xl font-semibold">{t("student.greeting", { name })} 👋</h1>
-        <p className="text-mute">{t("student.question")}</p>
-      </div>
-
+      <PageHeader eyebrow="Your learning space" title={t("student.greeting", { name })} subtitle={t("student.question")} action={<LinkButton href="/student/progress" variant="secondary">My progress <ArrowUpRight size={16} /></LinkButton>} />
       {ws.student.importantNote && (
         <div className="fade-up fade-up-1 rounded-2xl bg-saffron-100 border border-saffron-300 px-5 py-4">
           <div className="label mb-1">{t("student.tutorNote")}</div>
@@ -37,10 +34,10 @@ export default async function StudentHome() {
       )}
 
       <Reveal className="grid gap-4 md:grid-cols-3">
-        <Card title={t("student.nextSession")} className="md:col-span-1">
+        <Card title={t("student.nextSession")} className="md:col-span-1 border-ink-200 bg-ink-50/60">
           {ws.nextSession ? (
             <div>
-              <div className="text-2xl font-semibold display">{formatDayShort(ws.nextSession.startsAt)}</div>
+              <div className="mt-2 text-3xl font-bold display">{formatDayShort(ws.nextSession.startsAt)}</div>
               <div className="text-mute">{formatTime(ws.nextSession.startsAt)} · {relativeDays(daysUntil(toDateKey(ws.nextSession.startsAt)))}</div>
               {ws.nextSession.mode === "online" && ws.nextSession.meetingLink && <a className="btn-secondary btn-sm mt-3" href={ws.nextSession.meetingLink} target="_blank" rel="noreferrer">Join online</a>}
               {ws.lastLogged?.planForNext && <p className="mt-3 text-sm"><span className="text-mute">Plan: </span>{ws.lastLogged.planForNext}</p>}
@@ -95,8 +92,8 @@ export default async function StudentHome() {
         <Card title={t("student.practice")}><TopicChips topics={practise} empty="Nothing flagged — keep going." /></Card>
         <Card title={t("student.achievements")}>
           <ul className="space-y-1.5 text-sm">
-            {strong.slice(0, 2).map((tp) => <li key={tp.id}>⭐ {tp.name} — strong</li>)}
-            {recentDone.map((h) => <li key={h.id}>✅ {h.title} — {h.score}</li>)}
+            {strong.slice(0, 2).map((tp) => <li key={tp.id} className="flex items-start gap-2"><Award size={16} className="mt-0.5 shrink-0 text-saffron-600" /><span>{tp.name} — strong</span></li>)}
+            {recentDone.map((h) => <li key={h.id} className="flex items-start gap-2"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-moss-600" /><span>{h.title} — {h.score}</span></li>)}
             {!strong.length && !recentDone.length && <li className="text-mute">{t("common.nothingHere")}</li>}
           </ul>
         </Card>
