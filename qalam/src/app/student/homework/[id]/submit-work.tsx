@@ -5,8 +5,7 @@ import { Camera, Images, Trash2, ArrowUp, ArrowDown, Loader2 } from "lucide-reac
 import { submitHomeworkAction } from "../../actions";
 
 type Page = { key: string; name: string; preview: string | null; fileId?: string; status: "converting" | "uploading" | "ready" | "error"; error?: string };
-const MAX_PAGES = 20;
-const MAX_MB = 15;
+import { MAX_PAGES, MAX_FILE_BYTES } from "@/lib/upload-limits";
 
 function isHeic(f: File) {
   return /heic|heif/i.test(f.type) || /\.(heic|heif)$/i.test(f.name);
@@ -34,46 +33,53 @@ export function SubmitWork({ homeworkId, resubmit, labels }: { homeworkId: strin
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const router = useRouter();
+  const adding = useRef(false);
+  const pageCount = useRef(0);
   const cam = useRef<HTMLInputElement>(null);
   const lib = useRef<HTMLInputElement>(null);
 
   const update = (key: string, patch: Partial<Page>) => setPages((p) => p.map((x) => (x.key === key ? { ...x, ...patch } : x)));
 
   async function addFiles(files: FileList | null) {
-    if (!files) return;
-    setError(null);
-    for (const file of Array.from(files)) {
-      if (pages.length >= MAX_PAGES) {
-        setError(labels.maxPages);
-        break;
-      }
-      if (file.size > MAX_MB * 1024 * 1024) {
-        setError(labels.tooLarge);
-        continue;
-      }
-      const key = crypto.randomUUID();
-      const isPdf = file.type === "application/pdf";
-      setPages((p) => [...p, { key, name: file.name, preview: null, status: isHeic(file) ? "converting" : "uploading" }]);
-      try {
-        let blob: Blob = file;
-        if (isHeic(file)) {
-          const heic2any = (await import("heic2any")).default;
-          const out = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
-          blob = Array.isArray(out) ? out[0] : out;
+    if (!files || adding.current) return;
+    adding.current = true;
+    try {
+      setError(null);
+      for (const file of Array.from(files)) {
+        if (pageCount.current >= MAX_PAGES) {
+          setError(labels.maxPages);
+          break;
         }
-        if (!isPdf) blob = await shrink(blob);
-        update(key, { preview: isPdf ? null : URL.createObjectURL(blob), status: "uploading" });
-        const fd = new FormData();
-        fd.append("file", blob, isPdf ? file.name : file.name.replace(/\.\w+$/, "") + ".jpg");
-        fd.append("homeworkId", homeworkId);
-        const res = await fetch("/api/uploads", { method: "POST", body: fd });
-        if (!res.ok) throw new Error(res.status === 422 ? labels.processingFailed : `Upload failed (${res.status})`);
-        const data = (await res.json()) as { fileId: string };
-        update(key, { fileId: data.fileId, status: "ready" });
-      } catch (e) {
-        update(key, { status: "error", error: (e as Error).message || labels.processingFailed });
+        if (file.size > MAX_FILE_BYTES) {
+          setError(labels.tooLarge);
+          continue;
+        }
+        pageCount.current += 1;
+        const key = crypto.randomUUID();
+        const isPdf = file.type === "application/pdf";
+        setPages((p) => [...p, { key, name: file.name, preview: null, status: isHeic(file) ? "converting" : "uploading" }]);
+        try {
+          let blob: Blob = file;
+          if (isHeic(file)) {
+            const heic2any = (await import("heic2any")).default;
+            const out = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
+            blob = Array.isArray(out) ? out[0] : out;
+          }
+          if (!isPdf) blob = await shrink(blob);
+          if (blob.size > MAX_FILE_BYTES) throw new Error(labels.tooLarge);
+          update(key, { preview: isPdf ? null : URL.createObjectURL(blob), status: "uploading" });
+          const fd = new FormData();
+          fd.append("file", blob, isPdf ? file.name : file.name.replace(/\.\w+$/, "") + ".jpg");
+          fd.append("homeworkId", homeworkId);
+          const res = await fetch("/api/uploads", { method: "POST", body: fd });
+          if (!res.ok) throw new Error(res.status === 422 ? labels.processingFailed : `Upload failed (${res.status})`);
+          const data = (await res.json()) as { fileId: string };
+          update(key, { fileId: data.fileId, status: "ready" });
+        } catch (e) {
+          update(key, { status: "error", error: (e as Error).message || labels.processingFailed });
+        }
       }
-    }
+    } finally { adding.current = false; }
   }
 
   const move = (i: number, d: -1 | 1) =>
@@ -112,7 +118,7 @@ export function SubmitWork({ homeworkId, resubmit, labels }: { homeworkId: strin
               <div className="flex justify-between p-1">
                 <button type="button" className="btn-ghost btn-sm px-2" onClick={() => move(i, -1)} title={labels.moveUp}><ArrowUp size={14} /></button>
                 <button type="button" className="btn-ghost btn-sm px-2" onClick={() => move(i, 1)} title={labels.moveDown}><ArrowDown size={14} /></button>
-                <button type="button" className="btn-ghost btn-sm px-2 text-coral-600" onClick={() => setPages((x) => x.filter((y) => y.key !== p.key))} title={labels.remove}><Trash2 size={14} /></button>
+                <button type="button" className="btn-ghost btn-sm px-2 text-coral-600" onClick={() => { pageCount.current -= 1; if (p.preview) URL.revokeObjectURL(p.preview); setPages((x) => x.filter((y) => y.key !== p.key)); }} disabled={busy} title={labels.remove}><Trash2 size={14} /></button>
               </div>
             </li>
           ))}

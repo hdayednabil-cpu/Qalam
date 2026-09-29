@@ -90,6 +90,9 @@ describe("homework submission", () => {
     const foreignFile = newId();
     await db.insert(s.files).values({ id: foreignFile, tutorId: users.tutor.tutorId, storageKey: "y.jpg", mimeType: "image/jpeg", sizeBytes: 10, uploadedByUserId: users.chris.id });
     await expect(submitHomework(db, users.daniel, open.id, [foreignFile])).rejects.toBeInstanceOf(Forbidden);
+    await expect(submitHomework(db, users.daniel, open.id, ["missing-file"])).rejects.toBeInstanceOf(Forbidden);
+    await expect(submitHomework(db, users.daniel, open.id, [fileId, fileId])).rejects.toThrow("Duplicate pages");
+    await expect(submitHomework(db, users.daniel, open.id, Array(21).fill(fileId))).rejects.toThrow("Maximum 20 pages");
     const subId = await submitHomework(db, users.daniel, open.id, [fileId], "done");
     expect(subId).toBeTruthy();
     const after = (await db.query.homework.findFirst({ where: eq(s.homework.id, open.id) }))!;

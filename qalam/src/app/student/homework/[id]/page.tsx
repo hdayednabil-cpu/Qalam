@@ -1,3 +1,4 @@
+import { MAX_FILE_MB, MAX_PAGES } from "@/lib/upload-limits";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDb } from "@/db";
@@ -24,8 +25,8 @@ export default async function StudentHomeworkPage({ params }: { params: Promise<
   const latest = h.submissions[0];
   const canSubmit = ["assigned", "in_progress", "corrections_requested", "overdue"].includes(view.effectiveStatus) && view.submissionRequirement !== "none" && !v.viewingAs;
   const labels = Object.fromEntries(["uploadPages", "takePhoto", "addPage", "replace", "remove", "moveUp", "moveDown", "submitWork", "resubmit", "commentPlaceholder", "pagesHint", "converting", "uploading", "processingFailed"].map((k) => [k, t(`student.${k}`)]));
-  labels.tooLarge = t("student.tooLarge", { mb: 15 });
-  labels.maxPages = t("student.maxPages", { n: 20 });
+  labels.tooLarge = t("student.tooLarge", { mb: MAX_FILE_MB });
+  labels.maxPages = t("student.maxPages", { n: MAX_PAGES });
   return (
     <div className="max-w-3xl space-y-5">
       <PageHeader eyebrow={<Link href="/student/homework" className="hover:underline">← {t("nav.homework")}</Link>} title={h.title} subtitle={<span className="flex flex-wrap items-center gap-2"><StatusBadge status={view.effectiveStatus} /><span>{t("common.due")} {formatDateTime(h.dueAt)}</span>{h.estimatedMinutes && <span>· ~{h.estimatedMinutes} {t("common.minutes")}</span>}{h.score && <Badge tone="success">{h.score}</Badge>}</span>} />

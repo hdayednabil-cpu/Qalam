@@ -14,14 +14,14 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   const f = await getDb().query.files.findFirst({ where: eq(files.id, id) });
   if (!f) return new NextResponse("Not found", { status: 404 });
   try {
-    const buf = readFile(f.storageKey);
+    const buf = await readFile(f.storageKey);
     const name = f.originalName ?? f.storageKey;
     const ascii = name.replace(/[^\x20-\x7e]/g, "_").replace(/"/g, "");
     return new NextResponse(new Uint8Array(buf), {
-      headers: { "Content-Type": f.mimeType, "Cache-Control": "private, max-age=3600", "Content-Disposition": `inline; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}` },
+      headers: { "Content-Type": f.mimeType, "X-Content-Type-Options": "nosniff", "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}` },
     });
-  } catch (e) {
-    console.error("file route: cannot read", f.storageKey, (e as Error).message);
+  } catch {
+    console.error("file route: cannot read", f.id);
     return new NextResponse("Missing file", { status: 404 });
   }
 }
