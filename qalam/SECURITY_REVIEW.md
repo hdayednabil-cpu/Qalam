@@ -42,7 +42,8 @@ Do not add anonymous browser policies just to remove these notices.
    SUPABASE_SERVICE_ROLE_KEY, SUPABASE_STORAGE_BUCKET=qalam-uploads and
    DEMO_LOGINS=false. Keep the bucket private. Preview environments should use
    isolated test data rather than live student data.
-3. Verify signed-in tutor/student/guardian access after the live database change.
+3. Tutor login, dashboard, students, curriculum and calendar were verified after
+   the live database change. Student/guardian sign-in still needs verification.
    Preview-test upload, refresh/download, forbidden access and a full homework
    submission. Merge only after this and the credential replacement are done.
 4. Production smoke test after deployment; retain the previous deployment for
@@ -55,8 +56,12 @@ Do not add anonymous browser policies just to remove these notices.
   database browser-role denial and preserved owner access, file signatures,
   storage configuration, Supabase SDK HTTP calls (mocked network), upload
   authorization, oversized input, and storage/database failure paths.
-- No real cloud upload was performed. Live signed-in flows still require a
-  secure browser sign-in by the owner.
+- Vercel built the draft branch successfully as a READY preview. The production
+  deployment is unchanged. No real cloud upload was performed.
+- The owner securely signed in to the live tutor account. Dashboard, student
+  list, curriculum and calendar render after the database protections. The
+  curriculum Subject dropdown has zero options, confirming the setup blocker.
+  Student/guardian sign-in and live upload/submission are not yet verified.
 
 ## Follow-up before broader use
 
