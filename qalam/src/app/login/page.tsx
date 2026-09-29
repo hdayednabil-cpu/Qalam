@@ -9,11 +9,12 @@ import { LoginForm } from "./login-form";
 import { demoLogin } from "./actions";
 import { bootstrapTutor, demoEnabled } from "@/lib/bootstrap";
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ passwordChanged?: string }> }) {
   const user = await getCurrentUser();
   if (user) redirect(homeFor(user.role));
   await bootstrapTutor();
   const demo = demoEnabled();
+  const passwordChanged = (await searchParams).passwordChanged === "1";
   return (
     <div className="min-h-dvh grid bg-paper lg:grid-cols-[1.15fr_1fr]">
       <div className="relative isolate hidden overflow-hidden text-white lg:flex lg:flex-col lg:justify-between lg:p-12">
@@ -42,6 +43,7 @@ export default async function LoginPage() {
           </div>
           <h2 className="mb-1 text-2xl font-semibold">{t("auth.welcomeBack")}</h2>
           <p className="mb-6 text-sm text-mute">{t("auth.signIn")}</p>
+          {passwordChanged && <p role="status" className="mb-4 rounded-xl bg-moss-100 px-3 py-2 text-sm text-moss-700">Your password has been changed and all sessions signed out. Sign in with your new password.</p>}
           <LoginForm labels={{ identifier: t("auth.identifier"), password: t("auth.password"), signIn: t("auth.signIn"), invalid: t("auth.invalid"), throttled: t("auth.tooManyAttempts") }} />
           <p className="mt-3 text-xs text-mute">{t("auth.forgot")}</p>
           <div className="mt-6 border-t border-line pt-5 text-sm">

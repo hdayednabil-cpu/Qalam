@@ -1,3 +1,4 @@
+import { MAX_PAGES } from "./upload-limits";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { DB } from "@/db";
 import * as s from "@/db/schema";
@@ -222,8 +223,10 @@ export async function submitHomework(db: DB, user: CurrentUser, homeworkId: stri
   if (user.role !== "student" || user.studentId !== h.studentId) throw new Forbidden("Only the student can submit");
   if (!["assigned", "in_progress", "corrections_requested"].includes(h.status)) throw new Error("This homework is not open for submission");
   if (!fileIds.length && h.submissionRequirement !== "none") throw new Error("Add at least one page");
+  if (fileIds.length > MAX_PAGES) throw new Error(`Maximum ${MAX_PAGES} pages`);
+  if (new Set(fileIds).size !== fileIds.length) throw new Error("Duplicate pages");
   const files = fileIds.length ? await db.query.files.findMany({ where: inArray(s.files.id, fileIds) }) : [];
-  if (files.some((f) => f.uploadedByUserId !== user.id)) throw new Forbidden("File does not belong to user");
+  if (files.length !== fileIds.length || files.some((f) => f.uploadedByUserId !== user.id || f.tutorId !== user.tutorId)) throw new Forbidden("File does not belong to user");
   const prev = await db.query.submissions.findMany({ where: eq(s.submissions.homeworkId, homeworkId) });
   const id = newId();
   const version = prev.length + 1;

@@ -57,13 +57,14 @@ All demo dates are generated relative to today, so dashboards always look live.
 | **Own auth (cookie sessions, bcrypt)**   | Students often have no email; invitation codes create username-only logins. Sessions are DB-backed so deactivation is immediate.           |
 | **sharp**                                | Uploaded photos are auto-rotated (EXIF), downscaled to 2000px and re-encoded as JPEG so review pages are predictable. HEIC converts client-side. |
 
-### Why not Supabase Auth / RLS out of the box?
+### Authentication and database access
 
-The build environment had no cloud access, and the brief required everything to
-run locally. Authorisation is therefore enforced in one place —
-`src/lib/access.ts` — and every query and mutation goes through it (tests in
-`tests/permissions.test.ts`). Moving to Supabase later means pointing
-`DATABASE_URL` at it and, optionally, adding RLS policies as a second layer.
+Qalam uses its own server-side sessions and connects directly to PostgreSQL.
+The server enforces tutor/student/family permissions. The security migration
+also enables RLS and removes table privileges for Supabase browser roles.
+There are deliberately no browser RLS policies: this app does not use Supabase
+Auth. Run migrations as the table owner; the server connection must retain
+owner access. Do not expose the database URL or storage secret to the browser.
 
 ## Architecture
 
@@ -81,7 +82,7 @@ src/lib/i18n.ts         t() over src/messages/en.ts; add ar.ts with the same sha
 src/app/tutor/*         tutor portal (server components + src/app/tutor/actions.ts)
 src/app/student/*       student portal (photo submission is the one rich client component)
 src/app/parent/*        parent portal with family child switcher
-src/app/api/uploads     photo/PDF upload → sharp → local storage
+src/app/api/uploads     photo/PDF upload → sharp → private Supabase storage (local in development)
 src/app/api/files/[id]  HMAC-signed, expiring file URLs (S3-style capability URLs)
 ```
 
@@ -116,11 +117,21 @@ production unless `DEMO_LOGINS=true`), uploads go to `./data/uploads`.
    (the demo seed is not used in production).
 4. Deploy to Vercel.
 
-**File storage caveat:** uploads are written to local disk (`UPLOAD_DIR`). That is
-fine on a single server or VPS, but Vercel's filesystem is ephemeral. Before
-deploying there, swap `src/lib/files.ts` (`writeFile`/`readFile`) for Supabase
-Storage — the signed-URL route already models that pattern. Until then, run
-production on a persistent host (Railway, Fly, a VPS) or keep the app local.
+**File storage:** create a private `qalam-uploads` bucket and configure
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_STORAGE_BUCKET`
+in Vercel for each environment that needs uploads. The key stays server-side.
+Uploads are limited to 4 MiB per file and 20 files per submission, leaving room
+for multipart headers under Vercel's 4.5 MB request limit. Photos are normalized
+to JPEG. File downloads require a short-lived signed link.
+
+Production refuses to fall back to local disk when storage is not configured.
+Local development without any Supabase settings still uses `UPLOAD_DIR`.
+Existing local files are not automatically migrated to object storage.
+
+`AUTH_SECRET` signs file URLs, not login sessions. Set a unique random value of
+at least 32 characters. Changing `TUTOR_INITIAL_PASSWORD` does not reset an
+existing tutor account; it is only used when the account is first created.
+See `SECURITY_REVIEW.md` for deployment checks and remaining work.
 
 ## Tests
 

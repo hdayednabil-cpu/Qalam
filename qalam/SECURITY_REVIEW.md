@@ -1,0 +1,111 @@
+# Qalam security and storage review — 2026-09-29
+
+## Applied to the active Supabase project
+
+Migration `0001_server_only_database.sql` was applied through the Supabase
+management connection as `postgres`. All 39 public application tables now have
+RLS enabled and no table privileges for PUBLIC, anon, or authenticated. The
+owner retains server access. Default table grants for the migration owner were
+removed. The migration is idempotent so the normal Drizzle migration runner can
+record it on its next run.
+
+Verification: 39/39 tables protected; 0 readable by browser roles. User, student,
+and file counts were unchanged. Supabase's 39 RLS-disabled errors are gone.
+The remaining [RLS Enabled No Policy informational notices](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)
+are intentional: this app uses its own server sessions, not Supabase Auth.
+Do not add anonymous browser policies just to remove these notices.
+
+## Application changes (preview verified; production release pending)
+
+- Use the private Supabase bucket for durable uploads and downloads. Local
+  storage is development-only, and incomplete production configuration fails
+  closed. Storage keys and secrets stay server-side.
+- Require homework ownership and tutor scope for uploads; reject guardian
+  uploads, closed homework, oversized files and invalid PDF headers.
+- Limit uploads to 4 MiB and submissions to 20 distinct files; reject missing
+  file references and files owned by someone else. Limit decoded image pixels.
+- Clean up the stored object if saving the database record fails.
+- Require a production file-signing secret, reject expired/tampered links,
+  disable download caching, and add nosniff.
+- Update Drizzle ORM to 0.45.3 and sharp to 0.35.5 for security fixes.
+- Add an authenticated account-security screen for changing the user's own
+  password. It verifies the current password and session, requires matching
+  replacement passwords (at least 12 characters, at most 72 UTF-8 bytes),
+  updates the hash and revokes all account sessions in one transaction.
+  Login session creation rechecks the password hash under the same account
+  row lock, preventing an old-password login from racing session revocation.
+
+## Release gates
+
+1. Replace exposed credentials through account dashboards. Coordinate the
+   database password change with Vercel's DATABASE_URL update. Create a new
+   Supabase secret, update SUPABASE_SERVICE_ROLE_KEY, verify, then revoke the old
+   secret. Change AUTH_SECRET and reset the existing tutor password. Bootstrap
+   TUTOR_INITIAL_PASSWORD does not reset an existing database user. Invalidate
+   existing sessions as part of credential recovery. Do not put any values in
+   source control, issue descriptions, or chat.
+2. Verify Vercel has DATABASE_URL, AUTH_SECRET, SUPABASE_URL,
+   SUPABASE_SERVICE_ROLE_KEY, SUPABASE_STORAGE_BUCKET=qalam-uploads and
+   DEMO_LOGINS=false. Keep the bucket private. Preview environments should use
+   isolated test data rather than live student data.
+3. Tutor login, dashboard, students, curriculum and calendar were verified after
+   the live database change. The isolated application-flow test verifies real
+   student/guardian/tutor login actions, sessions, multipart upload, submission,
+   a fresh sign-in and signed file retrieval, plus foreign-account denial.
+   Only the cookie adapter, Next cache invalidation and database location are
+   mocked; records and files are disposable local fixtures. Preview builds run
+   this flow followed by the separate real-cloud storage check. This is server
+   integration coverage, not a complete browser UI test.
+4. Production smoke test after deployment; retain the previous deployment for
+   rollback. Do not undo database protections to roll back the application.
+
+## Verification completed
+
+- On September 29 the owner replaced Vercel's AUTH_SECRET and storage key,
+  updated DATABASE_URL and reset the database password, then redeployed main.
+  The new production deployment is READY. Its initial database authentication
+  error cleared; the live login page and signed-in calendar load successfully.
+  The owner confirmed revocation of the old Supabase secret and changed the
+  tutor password through /account on preview. The prior live tutor session
+  now redirects to login; only a fresh tutor session remains in the database.
+  Runtime logs show no application errors during the change.
+- Preview builds now run an explicit live storage smoke check after the app
+  builds. It inspects bucket privacy, writes one randomly named synthetic
+  object using the application's storage functions, verifies the exact bytes,
+  checks unsigned public denial, removes the object and confirms removal.
+  It also checks file signing with the configured secret. No application
+  records or student files are used. Production builds skip this check.
+  Run manually with `npm run test:storage:live` only in an environment with
+  intentionally configured server credentials; credentials are never logged.
+
+- Production build passed, including TypeScript checks.
+- 32 automated tests passed, covering existing access and homework flows,
+  database browser-role denial and preserved owner access, file signatures,
+  storage configuration, Supabase SDK HTTP calls (mocked network), upload
+  authorization, oversized input, and storage/database failure paths.
+  Password tests verify wrong-password/session denial, other-account isolation,
+  password length limits, atomic rollback on failed session revocation and
+  rejection of login attempts validated against an outdated password hash.
+- Preview fc43d7bee4445214f7f670abf218c66021d530da passed the real storage
+  check using the configured server secret. Supabase logs confirm successful
+  upload/download/removal and denied public access. No synthetic objects
+  remain. The production application is unchanged.
+- The owner securely signed in to the live tutor account. Dashboard, student
+  list, curriculum and calendar render after the database protections. The
+  curriculum Subject dropdown has zero options, confirming the setup blocker.
+  Student/guardian login and submission are covered by the isolated server
+  integration test. Browser testing with real student accounts remains a
+  follow-up before onboarding families.
+
+## Follow-up before broader use
+
+- npm audit still reports 8 dependency findings: 1 high (PostCSS under Next.js)
+  and 7 moderate (including framework and development tools). The proposed
+  automatic fixes include major upgrades and a Drizzle tooling downgrade;
+  those need a separate compatibility review. This is not a clean security audit.
+- Login throttling is currently per-process, so it is not a durable rate limit
+  across Vercel instances. Move it to shared storage or an edge protection rule.
+- Tutor "view as" queries need explicit tutor scoping before multi-tutor use.
+- The live curriculum catalogue is empty. Reports/resources and other unfinished
+  features need product review before adding OpenAI integration.
+- This is a focused review, not a complete penetration test or incident analysis.
