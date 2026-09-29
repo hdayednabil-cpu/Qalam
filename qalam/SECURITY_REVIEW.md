@@ -28,6 +28,12 @@ Do not add anonymous browser policies just to remove these notices.
 - Require a production file-signing secret, reject expired/tampered links,
   disable download caching, and add nosniff.
 - Update Drizzle ORM to 0.45.3 and sharp to 0.35.5 for security fixes.
+- Add an authenticated account-security screen for changing the user's own
+  password. It verifies the current password and session, requires matching
+  replacement passwords (at least 12 characters, at most 72 UTF-8 bytes),
+  updates the hash and revokes all account sessions in one transaction.
+  Login session creation rechecks the password hash under the same account
+  row lock, preventing an old-password login from racing session revocation.
 
 ## Release gates
 
@@ -55,7 +61,8 @@ Do not add anonymous browser policies just to remove these notices.
   updated DATABASE_URL and reset the database password, then redeployed main.
   The new production deployment is READY. Its initial database authentication
   error cleared; the live login page and signed-in calendar load successfully.
-  The old Supabase secret and existing tutor password still need retirement.
+  The owner confirmed revocation of the old Supabase secret. The existing
+  tutor password still needs changing by the owner on the account screen.
 - Preview builds now run an explicit live storage smoke check after the app
   builds. It inspects bucket privacy, writes one randomly named synthetic
   object using the application's storage functions, verifies the exact bytes,
@@ -66,12 +73,17 @@ Do not add anonymous browser policies just to remove these notices.
   intentionally configured server credentials; credentials are never logged.
 
 - Production build passed, including TypeScript checks.
-- 24 automated tests passed, covering existing access and homework flows,
+- 31 automated tests passed, covering existing access and homework flows,
   database browser-role denial and preserved owner access, file signatures,
   storage configuration, Supabase SDK HTTP calls (mocked network), upload
   authorization, oversized input, and storage/database failure paths.
-- Vercel built the draft branch successfully as a READY preview. The production
-  deployment is unchanged. No real cloud upload was performed.
+  Password tests verify wrong-password/session denial, other-account isolation,
+  password length limits, atomic rollback on failed session revocation and
+  rejection of login attempts validated against an outdated password hash.
+- Preview fc43d7bee4445214f7f670abf218c66021d530da passed the real storage
+  check using the configured server secret. Supabase logs confirm successful
+  upload/download/removal and denied public access. No synthetic objects
+  remain. The production application is unchanged.
 - The owner securely signed in to the live tutor account. Dashboard, student
   list, curriculum and calendar render after the database protections. The
   curriculum Subject dropdown has zero options, confirming the setup blocker.

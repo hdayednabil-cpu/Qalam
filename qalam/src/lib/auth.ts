@@ -7,6 +7,7 @@ import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { getDb, type DB } from "@/db";
 import { authSessions, users, students, guardians, familyGuardians, families, type Role } from "@/db/schema";
+import { createDatabaseSession } from "./password-security";
 
 export const SESSION_COOKIE = "qalam_session";
 export const VIEW_AS_COOKIE = "qalam_view_as";
@@ -73,14 +74,14 @@ export async function requireUser(role?: Role): Promise<CurrentUser> {
   return u;
 }
 
-export async function createSessionCookie(userId: string) {
+export async function createSessionCookie(userId: string, expectedPasswordHash?: string) {
   const db = getDb();
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400000);
-  await db.insert(authSessions).values({ id: token, userId, expiresAt });
-  await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, userId));
+  if (!(await createDatabaseSession(db, { userId, token, expiresAt, expectedPasswordHash }))) return false;
   const jar = await cookies();
   jar.set(SESSION_COOKIE, token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", expires: expiresAt, path: "/" });
+  return true;
 }
 
 export async function destroySession() {

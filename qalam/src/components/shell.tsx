@@ -31,6 +31,7 @@ export function AppShell({ children, items, user, viewingAs, role, unread = 0 }:
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold">{user.displayName}</div>
               <div className="text-xs text-mute">{t(`roles.${role}`)}</div>
+              <Link href="/account" className="text-xs text-ink-700 hover:underline">Account security</Link>
             </div>
             <form action={logout}>
               <button className="btn-ghost btn-sm" type="submit">
@@ -46,6 +47,7 @@ export function AppShell({ children, items, user, viewingAs, role, unread = 0 }:
             <Wordmark />
           </Link>
           <div className="flex items-center gap-2">
+            <Link href="/account" className="text-xs text-ink-700 hover:underline">Account</Link>
             <Avatar name={user.displayName} hue={user.hue ?? 200} size={30} />
             <form action={logout}>
               <button className="btn-ghost btn-sm" type="submit">

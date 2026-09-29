@@ -15,7 +15,7 @@ export async function login(_prev: { error?: string } | undefined, formData: For
   const db = getDb();
   const u = await db.query.users.findFirst({ where: or(eq(users.email, identifier), eq(users.username, identifier)) });
   if (!u || u.status !== "active" || !(await verifyPassword(password, u.passwordHash))) return { error: "invalid" };
-  await createSessionCookie(u.id);
+  if (!(await createSessionCookie(u.id, u.passwordHash))) return { error: "invalid" };
   redirect(homeFor(u.role));
 }
 
