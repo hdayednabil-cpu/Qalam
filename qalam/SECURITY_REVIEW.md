@@ -51,6 +51,20 @@ Do not add anonymous browser policies just to remove these notices.
 
 ## Verification completed
 
+- On September 29 the owner replaced Vercel's AUTH_SECRET and storage key,
+  updated DATABASE_URL and reset the database password, then redeployed main.
+  The new production deployment is READY. Its initial database authentication
+  error cleared; the live login page and signed-in calendar load successfully.
+  The old Supabase secret and existing tutor password still need retirement.
+- Preview builds now run an explicit live storage smoke check after the app
+  builds. It inspects bucket privacy, writes one randomly named synthetic
+  object using the application's storage functions, verifies the exact bytes,
+  checks unsigned public denial, removes the object and confirms removal.
+  It also checks file signing with the configured secret. No application
+  records or student files are used. Production builds skip this check.
+  Run manually with `npm run test:storage:live` only in an environment with
+  intentionally configured server credentials; credentials are never logged.
+
 - Production build passed, including TypeScript checks.
 - 24 automated tests passed, covering existing access and homework flows,
   database browser-role denial and preserved owner access, file signatures,
