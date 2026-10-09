@@ -96,6 +96,17 @@ export const authSessions = pgTable("auth_sessions", {
   createdAt: createdAt(),
 });
 
+/** Shared login throttling state. Keys are one-way hashes, never identifiers. */
+export const loginRateLimits = pgTable(
+  "login_rate_limits",
+  {
+    keyHash: text("key_hash").primaryKey(),
+    attempts: integer("attempts").default(1).notNull(),
+    expiresAt: ts("expires_at").notNull(),
+  },
+  (t) => [index("login_rate_limits_expires_idx").on(t.expiresAt)],
+);
+
 export const families = pgTable("families", {
   id: text("id").primaryKey(),
   tutorId: text("tutor_id").notNull().references(() => tutors.id),

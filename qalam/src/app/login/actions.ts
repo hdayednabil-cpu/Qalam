@@ -4,15 +4,16 @@ import { cookies } from "next/headers";
 import { eq, or } from "drizzle-orm";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
-import { createSessionCookie, destroySession, homeFor, verifyPassword, throttle, VIEW_AS_COOKIE, requireUser, CHILD_COOKIE } from "@/lib/auth";
+import { createSessionCookie, destroySession, homeFor, verifyPassword, VIEW_AS_COOKIE, requireUser, CHILD_COOKIE } from "@/lib/auth";
 import { demoEnabled } from "@/lib/bootstrap";
+import { consumeLoginAttempt } from "@/lib/login-rate-limit";
 
 export async function login(_prev: { error?: string } | undefined, formData: FormData): Promise<{ error?: string }> {
   const identifier = String(formData.get("identifier") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   if (!identifier || !password) return { error: "invalid" };
-  if (!throttle(`login:${identifier}`, 8)) return { error: "throttled" };
   const db = getDb();
+  if (!(await consumeLoginAttempt(db, identifier))) return { error: "throttled" };
   const u = await db.query.users.findFirst({ where: or(eq(users.email, identifier), eq(users.username, identifier)) });
   if (!u || u.status !== "active" || !(await verifyPassword(password, u.passwordHash))) return { error: "invalid" };
   if (!(await createSessionCookie(u.id, u.passwordHash))) return { error: "invalid" };
