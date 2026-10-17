@@ -157,7 +157,7 @@ export async function getWorkspace(db: DB, user: CurrentUser, studentId: string)
   // Sessions
   const ssRows = await db.query.sessionStudents.findMany({ where: eq(s.sessionStudents.studentId, studentId), columns: { sessionId: true } });
   const sessionIds = ssRows.map((r) => r.sessionId);
-  const sessions = sessionIds.length ? await loadSessions(db, sessionIds) : [];
+  const sessions = sessionIds.length ? (await loadSessions(db, sessionIds)).map((session) => sessionForViewer(session, user, [studentId])) : [];
   sessions.sort((a, b) => b.startsAt.getTime() - a.startsAt.getTime());
   const now = Date.now();
   const upcoming = sessions.filter((x) => x.status === "scheduled" && x.endsAt.getTime() >= now).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
@@ -226,7 +226,7 @@ export async function getWorkspace(db: DB, user: CurrentUser, studentId: string)
         priority: a.priority,
         topics,
         revision: revisionProgress(topics.map((x) => x.status)),
-        result: a.result ? { result: a.result.result, reflection: a.result.reflection, sharedComment: a.result.sharedComment, recordedAt: a.result.recordedAt } : null,
+        result: a.result ? { result: a.result.result, reflection: user.role === "tutor" ? a.result.reflection : null, sharedComment: a.result.sharedComment, recordedAt: a.result.recordedAt } : null,
       };
     })
     .sort((a, b) => (a.daysUntil >= 0 && b.daysUntil >= 0 ? a.daysUntil - b.daysUntil : b.daysUntil - a.daysUntil));
@@ -312,6 +312,15 @@ export function computeAlerts(ws: Workspace): Alert[] {
   return alerts;
 }
 
+/** Remove tutor-only notes and other pupils' details at the query boundary. */
+function sessionForViewer(session: SessionView, user: CurrentUser, studentIds: string[]): SessionView {
+  if (user.role === "tutor") return session;
+  return { ...session, privateNotes: null, packageOverrideReason: null,
+    students: session.students.filter((student) => studentIds.includes(student.id)).map((student) => ({ ...student, assessment: null })),
+    topics: session.topics.filter((topic) => studentIds.includes(topic.studentId)).map((topic) => ({ ...topic, note: null })),
+  };
+}
+
 export async function loadSessions(db: DB, ids: string[]): Promise<SessionView[]> {
   if (!ids.length) return [];
   const rows = await db.query.sessions.findMany({
@@ -357,7 +366,7 @@ export async function sessionsBetween(db: DB, user: CurrentUser, fromKey: string
     .where(and(inArray(s.sessionStudents.studentId, ids), gte(s.sessions.startsAt, from), lte(s.sessions.startsAt, to)));
   const uniq = [...new Set(ss.map((x) => x.sessionId))];
   const rows = await loadSessions(db, uniq);
-  return rows.filter((r) => toDateKey(r.startsAt) >= fromKey && toDateKey(r.startsAt) <= toKey).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+  return rows.filter((r) => toDateKey(r.startsAt) >= fromKey && toDateKey(r.startsAt) <= toKey).map((row) => sessionForViewer(row, user, ids)).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 }
 
 export async function getSession(db: DB, user: CurrentUser, sessionId: string): Promise<SessionView | null> {
@@ -365,7 +374,7 @@ export async function getSession(db: DB, user: CurrentUser, sessionId: string): 
   if (!row) return null;
   const ids = await accessibleStudentIds(db, user);
   if (!row.students.some((st) => ids.includes(st.id))) return null;
-  return row;
+  return sessionForViewer(row, user, ids);
 }
 
 // ---------------------------------------------------------------------------

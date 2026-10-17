@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Award, CheckCircle2, ArrowUpRight } from "lucide-react";
+import { JourneyHero } from "@/components/learning-orbit";
 import { getDb } from "@/db";
 import { getViewer } from "@/lib/auth";
 import { canSee } from "@/lib/access";
@@ -26,6 +27,9 @@ export default async function StudentHome() {
   return (
     <div className="space-y-6">
       <PageHeader eyebrow="Your learning space" title={t("student.greeting", { name })} subtitle={t("student.question")} action={<LinkButton href="/student/progress" variant="secondary">My progress <ArrowUpRight size={16} /></LinkButton>} />
+      <JourneyHero eyebrow="One step forward" title={open.length ? "Your next breakthrough starts here." : nextTest ? "A little practice. A lot more confidence." : "Every great journey starts with a lesson."} href={open[0] ? `/student/homework/${open[0].id}` : nextTest ? "/student/tests" : "/student/sessions"} action={open.length ? open[0].effectiveStatus === "corrections_requested" ? "Continue your corrections" : "Open your next task" : nextTest ? "Open your revision plan" : "View your lessons"}>
+        {open[0] ? open[0].title : nextTest ? `Get ready for ${nextTest.name}, one topic at a time.` : "Your lessons, feedback and learning map will grow here as you work with your tutor."}
+      </JourneyHero>
       {ws.student.importantNote && (
         <div className="fade-up fade-up-1 rounded-2xl bg-saffron-100 border border-saffron-300 px-5 py-4">
           <div className="label mb-1">{t("student.tutorNote")}</div>
@@ -51,8 +55,8 @@ export default async function StudentHome() {
         </Card>
       </Reveal>
 
-      <Reveal className="grid gap-4 md:grid-cols-2" delay={0.08}>
-        <Card title={t("student.upcomingTest")}>
+      {(nextTest || ws.lastLogged || ws.enrolments.some((e) => e.currentTopic)) && <Reveal className="grid gap-4 md:grid-cols-2" delay={0.08}>
+        {nextTest && <Card title={t("student.upcomingTest")}>
           {nextTest ? (
             <div>
               <div className="flex items-center gap-4">
@@ -71,7 +75,7 @@ export default async function StudentHome() {
           ) : (
             <EmptyState>{t("empty.noTests")}</EmptyState>
           )}
-        </Card>
+        </Card>}
         <Card title={t("student.lastSession")}>
           {ws.lastLogged ? (
             <div>
@@ -86,9 +90,9 @@ export default async function StudentHome() {
             <p key={e.id} className="mt-3 text-sm"><span className="text-mute">{t("student.currentTopic")} ({e.subject}): </span><span className="font-medium">{e.currentTopic.name}</span></p>
           ))}
         </Card>
-      </Reveal>
+      </Reveal>}
 
-      <Reveal className="grid gap-4 md:grid-cols-3" delay={0.12}>
+      {ws.enrolments.length > 0 ? <Reveal className="grid gap-4 md:grid-cols-3" delay={0.12}>
         <Card title={t("student.practice")}><TopicChips topics={practise} empty="Nothing flagged — keep going." /></Card>
         <Card title={t("student.achievements")}>
           <ul className="space-y-1.5 text-sm">
@@ -101,7 +105,7 @@ export default async function StudentHome() {
           {ws.enrolments.map((e) => <MotionProgress key={e.id} value={e.coverage.percent} label={e.subject} className="mb-2" />)}
           <Link href="/student/progress" className="text-sm text-ink-700 hover:underline">{t("common.viewAll")} →</Link>
         </Card>
-      </Reveal>
+      </Reveal> : <Card title="Your learning map is on its way" subtitle="Your tutor will add subjects and topics here."><p className="text-sm text-mute">After each lesson, see what you’ve learned, celebrate your strengths and discover what to practise next.</p></Card>}
 
       {notes.length > 0 && (
         <Card title={t("nav.feedback")}>

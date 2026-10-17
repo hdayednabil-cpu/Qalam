@@ -1,10 +1,11 @@
 import type { Workspace } from "@/lib/queries";
 import { t } from "@/lib/i18n";
-import { Card, MasteryDot, Ring, cx } from "./ui";
+import { Card, EmptyState, MasteryDot, Ring, cx } from "./ui";
 import { StatusLegend } from "./items";
 
 /** Curriculum coverage + mastery view shared by student and parent (no private data). */
 export function ProgressView({ ws, showRings = true }: { ws: Workspace; showRings?: boolean }) {
+  if (!ws.enrolments.length) return <Card title="Your learning map is on its way" subtitle="Progress starts with a plan."><EmptyState>Your tutor will add your subjects and topics here. After each lesson, this space will show what you’ve covered, what feels strong and what to practise next.</EmptyState></Card>;
   return (
     <div className="space-y-5">
       <StatusLegend />
@@ -15,7 +16,8 @@ export function ProgressView({ ws, showRings = true }: { ws: Workspace; showRing
           if (!sections.has(k)) sections.set(k, []);
           sections.get(k)!.push(tp);
         }
-        return (
+        if (!ws.enrolments.length) return <Card title="Your learning map is on its way" subtitle="Progress starts with a plan."><EmptyState>Your tutor will add your subjects and topics here. After each lesson, this space will show what you’ve covered, what feels strong and what to practise next.</EmptyState></Card>;
+  return (
           <Card key={e.id} title={e.subject} subtitle={e.templateName} action={showRings ? <Ring value={e.coverage.percent} size={56} stroke={6} tone={e.coverage.percent >= 60 ? "success" : "brand"} /> : undefined}>
             <div className="text-xs text-mute mb-3">
               {e.coverage.completed} {t("parent.covered").toLowerCase()} · {e.coverage.current} in progress · {e.coverage.needsRevision} to revise · {e.coverage.notCovered} {t("parent.remainingTopics").toLowerCase()}
@@ -23,9 +25,9 @@ export function ProgressView({ ws, showRings = true }: { ws: Workspace; showRing
             <div className="space-y-3">
               {[...sections.entries()].map(([name, topics]) => (
                 <div key={name}>
-                  <div className="flex items-center gap-2 text-sm font-medium mb-1">
+                  <div className="flex flex-wrap items-center gap-2 text-sm font-medium mb-1">
                     <span>{name}</span>
-                    <span className="flex gap-0.5 ml-auto">{topics.map((x) => <MasteryDot key={x.id} level={x.mastery} />)}</span>
+                    <span className="flex flex-wrap gap-0.5 ml-auto">{topics.map((x) => <MasteryDot key={x.id} level={x.mastery} />)}</span>
                   </div>
                   <ul className="grid gap-x-4 gap-y-0.5 sm:grid-cols-2 text-sm">
                     {topics.map((tp) => (

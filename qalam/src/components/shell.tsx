@@ -24,7 +24,7 @@ export function AppShell({ children, items, user, viewingAs, role, unread = 0 }:
   return (
     <div className="min-h-dvh md:grid md:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[244px_minmax(0,1fr)]">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-xl focus:bg-white focus:px-4 focus:py-3">Skip to content</a>
-      <aside className="hidden md:sticky md:top-0 md:flex md:h-dvh md:flex-col bg-ink-950 px-4 py-7 text-white">
+      <aside className="hidden md:sticky md:top-0 md:flex md:h-dvh md:overflow-y-auto md:flex-col sidebar-surface bg-ink-950 px-4 py-7 text-white">
         <Link href={items[0].href} className="mb-10 px-4 w-fit"><Wordmark /></Link>
         <div className="mb-3 px-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{t(`roles.${viewingAs?.role ?? role}`)} workspace</div>
         <NavLinks items={withBadge} variant="side" />
@@ -38,12 +38,12 @@ export function AppShell({ children, items, user, viewingAs, role, unread = 0 }:
         </div>
       </aside>
       <div className="min-w-0 flex flex-col">
-        <header className="flex min-h-[76px] items-center justify-between gap-3 border-b border-line bg-white px-5 md:px-8 xl:px-10">
+        <header className="sticky top-0 z-20 flex min-h-[68px] items-center justify-between gap-3 border-b border-line bg-white/90 backdrop-blur-xl px-5 md:px-8 xl:px-10">
           <Link href={items[0].href} className="md:hidden"><Wordmark /></Link>
           <div className="hidden md:block"><WorkspaceHeading items={items} /></div>
           <div className="flex items-center gap-3">
             <span className="hidden text-xs text-mute sm:block">A little progress, every day.</span>
-            <Link href="/account" aria-label="Account settings"><Avatar name={user.displayName} hue={user.hue ?? 220} size={32} /></Link>
+            <Link href="/account" aria-label="Account settings" className="flex min-h-11 min-w-11 items-center justify-center rounded-xl"><Avatar name={user.displayName} hue={user.hue ?? 220} size={32} /></Link>
             <form action={logout} className="md:hidden"><button type="submit" aria-label={t("nav.signOut")} className="rounded-lg p-2 text-mute hover:bg-ink-50"><LogOut size={17} /></button></form>
           </div>
         </header>
@@ -53,7 +53,7 @@ export function AppShell({ children, items, user, viewingAs, role, unread = 0 }:
             <form action={clearViewAs}><button className="btn-secondary btn-sm" type="submit">Exit preview</button></form>
           </div>
         )}
-        <main id="main-content" className="mx-auto w-full max-w-[1440px] flex-1 px-5 py-7 pb-28 md:px-8 md:py-9 xl:px-10">{children}</main>
+        <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-[1440px] flex-1 px-5 py-7 pb-28 md:px-8 md:py-9 xl:px-10">{children}</main>
         <NavLinks items={withBadge} variant="bottom" />
       </div>
     </div>

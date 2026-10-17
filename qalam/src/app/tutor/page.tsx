@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, CalendarDays, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { getTutorDashboard } from "@/lib/queries";
@@ -8,6 +8,7 @@ import { formatDayLong, todayKey } from "@/lib/dates";
 import { Card, EmptyState, Stat, Avatar, LinkButton, Badge, PageHeader } from "@/components/ui";
 import { SessionRow, HomeworkRow, TestRow, AlertList } from "@/components/items";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
+import { JourneyHero } from "@/components/learning-orbit";
 import { nextStepAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -18,38 +19,25 @@ export default async function TutorDashboard() {
   return (
     <div className="space-y-6">
       <PageHeader eyebrow={formatDayLong(todayKey())} title={`Welcome back, ${user.displayName.split(" ")[0]}.`} subtitle="A clear view of your day. More space to focus on teaching." action={<LinkButton href="/tutor/students/new" variant="primary"><Plus size={16} /> Add student</LinkButton>} />
-      <section className="workspace-hero flex flex-col justify-between gap-6 rounded-2xl p-6 text-white sm:flex-row sm:items-center sm:p-7">
-        <div><div className="mb-3 flex items-center gap-2 text-[11px] font-medium uppercase tracking-widest text-ink-200"><CalendarDays size={15} /> Your teaching day</div><h2 className="text-2xl font-semibold">{d.todays.length ? `${d.todays.length} session${d.todays.length === 1 ? "" : "s"} on today’s calendar.` : "A little room to plan ahead."}</h2><p className="mt-2 max-w-md text-sm leading-relaxed text-slate-300">{d.todays.length ? "Your schedule, lesson notes and next steps, all in one place." : "Review your students’ work or get ready for the next lesson."}</p></div>
-        <Link href="/tutor/calendar" className="inline-flex w-fit shrink-0 items-center gap-4 rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-xs font-semibold hover:bg-white/10">Open calendar <ArrowUpRight size={16} /></Link>
-      </section>
+      <JourneyHero eyebrow="Your teaching day" title={d.needsLog.length ? `${d.needsLog.length} lessons ready to wrap up.` : d.awaitingReview.length ? "Fresh work. Your feedback matters." : "Make room for the next breakthrough."} href={d.needsLog[0] ? `/tutor/sessions/${d.needsLog[0].id}` : d.awaitingReview[0] ? `/tutor/homework/${d.awaitingReview[0].id}` : "/tutor/calendar"} action={d.needsLog.length ? "Log the next session" : d.awaitingReview.length ? "Review homework" : "Plan your next lesson"}>
+        {d.needsLog.length ? "Capture the progress, share feedback, and give every student a clear next step." : `${d.todays.length} sessions today. Your lessons, students and next steps are all connected.`}
+      </JourneyHero>
       <div className="flex items-center justify-between"><h2 className="text-sm font-bold">{t("tutor.attention")}</h2><span className="text-xs text-mute">Your priorities at a glance</span></div>
       <Stagger className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StaggerItem><Stat label={t("tutor.needsLogging")} value={d.needsLog.length} tone={d.needsLog.length ? "warn" : undefined} /></StaggerItem>
-        <StaggerItem><Stat label={t("tutor.awaitingReview")} value={d.awaitingReview.length} tone={d.awaitingReview.length ? "warn" : undefined} /></StaggerItem>
-        <StaggerItem><Stat label={t("tutor.overdueHomework")} value={d.overdue.length} tone={d.overdue.length ? "danger" : undefined} /></StaggerItem>
-        <StaggerItem><Stat label={t("common.package")} value={d.indicators.lowPackages} hint="running low" tone={d.indicators.lowPackages ? "warn" : undefined} /></StaggerItem>
+        <StaggerItem><Stat href={d.needsLog.length ? "#session-queue" : "/tutor/calendar"} label={t("tutor.needsLogging")} value={d.needsLog.length} tone={d.needsLog.length ? "warn" : undefined} /></StaggerItem>
+        <StaggerItem><Stat href="#review-queue" label={t("tutor.awaitingReview")} value={d.awaitingReview.length} tone={d.awaitingReview.length ? "warn" : undefined} /></StaggerItem>
+        <StaggerItem><Stat href={d.overdue.length ? "#overdue-queue" : "#review-queue"} label={t("tutor.overdueHomework")} value={d.overdue.length} tone={d.overdue.length ? "danger" : undefined} /></StaggerItem>
+        <StaggerItem><Stat href="#attention-queue" label={t("common.package")} value={d.indicators.lowPackages} hint="running low" tone={d.indicators.lowPackages ? "warn" : undefined} /></StaggerItem>
       </Stagger>
 
       <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
         <Reveal className="space-y-6">
-          <Card title={t("tutor.todaysSessions")} action={<LinkButton href="/tutor/calendar" variant="ghost">{t("nav.calendar")} →</LinkButton>}>
-            {d.todays.length ? (
-              <div className="divide-y divide-line/70">
-                {d.todays.map((s) => (
-                  <SessionRow key={s.id} s={s} href={`/tutor/sessions/${s.id}`} />
-                ))}
-              </div>
-            ) : (
-              <EmptyState>{t("tutor.noSessionsToday")}</EmptyState>
-            )}
-          </Card>
-
           {d.needsLog.length > 0 && (
-            <Card title={t("tutor.needsLogging")} subtitle="Time has passed — log these while they are fresh.">
+            <Card id="session-queue" title={t("tutor.needsLogging")} subtitle="Time has passed — log these while they are fresh.">
               <div className="divide-y divide-line/70">
                 {d.needsLog.map((s) => (
                   <div key={s.id} className="flex items-center gap-3">
-                    <div className="flex-1">
+                    <div className="min-w-0 flex-1">
                       <SessionRow s={s} compact />
                     </div>
                     <LinkButton href={`/tutor/sessions/${s.id}`} variant="primary" className="btn-sm">
@@ -61,7 +49,7 @@ export default async function TutorDashboard() {
             </Card>
           )}
 
-          <Card title={t("tutor.awaitingReview")}>
+          <Card id="review-queue" title={t("tutor.awaitingReview")}>
             {d.awaitingReview.length ? (
               <div className="divide-y divide-line/70">
                 {d.awaitingReview.map((h) => (
@@ -70,6 +58,18 @@ export default async function TutorDashboard() {
               </div>
             ) : (
               <EmptyState>{t("common.allCaughtUp")}</EmptyState>
+            )}
+          </Card>
+
+          <Card title={t("tutor.todaysSessions")} action={<LinkButton href="/tutor/calendar" variant="ghost">{t("nav.calendar")} →</LinkButton>}>
+            {d.todays.length ? (
+              <div className="divide-y divide-line/70">
+                {d.todays.map((s) => (
+                  <SessionRow key={s.id} s={s} href={`/tutor/sessions/${s.id}`} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState>{t("tutor.noSessionsToday")}</EmptyState>
             )}
           </Card>
 
@@ -87,7 +87,7 @@ export default async function TutorDashboard() {
         </Reveal>
 
         <Reveal className="space-y-6" delay={0.12}>
-          <Card title={t("tutor.studentsNeedingAttention")}>
+          <Card id="attention-queue" title={t("tutor.studentsNeedingAttention")}>
             {d.attention.length ? (
               <div className="space-y-4">
                 {d.attention.map((st) => (
@@ -105,7 +105,7 @@ export default async function TutorDashboard() {
           </Card>
 
           {d.overdue.length > 0 && (
-            <Card title={t("tutor.overdueHomework")}>
+            <Card id="overdue-queue" title={t("tutor.overdueHomework")}>
               <div className="divide-y divide-line/70">
                 {d.overdue.map((h) => (
                   <HomeworkRow key={h.id} h={h} href={`/tutor/homework/${h.id}`} studentName={h.studentName} />

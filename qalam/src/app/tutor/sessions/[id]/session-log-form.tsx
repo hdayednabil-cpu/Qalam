@@ -1,4 +1,5 @@
 "use client";
+import { PendingButton } from "@/components/pending-button";
 import { useState } from "react";
 import type { Mastery } from "@/db/schema";
 
@@ -30,9 +31,10 @@ export function SessionLogForm({ action, sessionId, students, defaults, labels }
   return (
     <form action={action} className="space-y-5">
       <input type="hidden" name="sessionId" value={sessionId} />
+      {students.map((student) => <input key={student.id} type="hidden" name="studentId" value={student.id} />)}
       <div className="flex gap-2">
         {(["completed", "no_show"] as const).map((st) => (
-          <label key={st} className={`btn ${status === st ? "bg-ink-800 text-white" : "bg-ink-50 text-ink-800"}`}>
+          <label key={st} className={`btn focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ink-500 ${status === st ? "bg-ink-800 text-white" : "bg-ink-50 text-ink-800"}`}>
             <input type="radio" name="status" value={st} checked={status === st} onChange={() => setStatus(st)} className="sr-only" />
             {st === "completed" ? labels.markCompleted : labels.markNoShow}
           </label>
@@ -51,7 +53,6 @@ export function SessionLogForm({ action, sessionId, students, defaults, labels }
           }
           return (
             <div key={s.id} className="card p-5 space-y-4">
-              <input type="hidden" name="studentId" value={s.id} />
               {students.length > 1 && <h3 className="font-semibold">{s.name}</h3>}
               {s.nextSteps.length > 0 && (
                 <div>
@@ -89,7 +90,7 @@ export function SessionLogForm({ action, sessionId, students, defaults, labels }
                                 {LEVELS.map((l) => (
                                   <label key={l} className="cursor-pointer">
                                     <input type="radio" name={`mastery:${s.id}:${tp.id}`} value={l} defaultChecked={(s.existing[tp.id] ?? tp.mastery) === l} className="peer sr-only" />
-                                    <span className="inline-block rounded-full border border-line px-2 py-0.5 text-xs peer-checked:bg-ink-800 peer-checked:text-white peer-checked:border-ink-800">{labels[`m_${l}`]}</span>
+                                    <span className="inline-block rounded-full border border-line px-2 py-0.5 text-xs peer-checked:bg-ink-800 peer-checked:text-white peer-checked:border-ink-800 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink-500">{labels[`m_${l}`]}</span>
                                   </label>
                                 ))}
                                 <input name={`note:${s.id}:${tp.id}`} className="input py-0.5 text-xs max-w-56" placeholder={labels.topicNote} />
@@ -107,7 +108,7 @@ export function SessionLogForm({ action, sessionId, students, defaults, labels }
                 <input name={`assessment:${s.id}`} className="input" defaultValue={s.assessment ?? ""} placeholder={labels.assessmentHint} />
               </label>
               <div>
-                <button type="button" className="btn-ghost btn-sm" onClick={() => setHwOpen((p) => ({ ...p, [s.id]: !p[s.id] }))}>
+                <button type="button" aria-expanded={!!hwOpen[s.id]} className="btn-ghost btn-sm" onClick={() => setHwOpen((p) => ({ ...p, [s.id]: !p[s.id] }))}>
                   {hwOpen[s.id] ? "−" : "+"} {labels.assignHomework}
                 </button>
                 {hwOpen[s.id] && (
@@ -146,7 +147,7 @@ export function SessionLogForm({ action, sessionId, students, defaults, labels }
           <textarea name="privateNotes" className="input min-h-20" defaultValue={defaults.privateNotes} />
         </label>
       </div>
-      <button className="btn-primary w-full sm:w-auto" type="submit">{labels.save}</button>
+      <PendingButton className="btn-primary w-full sm:w-auto" pendingLabel="Saving lesson…">{labels.save}</PendingButton>
     </form>
   );
 }

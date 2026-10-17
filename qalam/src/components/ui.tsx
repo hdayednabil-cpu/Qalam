@@ -19,11 +19,11 @@ export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
 }
 
-export function Card({ children, className, title, action, subtitle, padded = true }: { children: ReactNode; className?: string; title?: ReactNode; action?: ReactNode; subtitle?: ReactNode; padded?: boolean }) {
+export function Card({ children, className, title, action, subtitle, id, padded = true }: { children: ReactNode; className?: string; title?: ReactNode; action?: ReactNode; subtitle?: ReactNode; id?: string; padded?: boolean }) {
   return (
-    <section className={cx("card", padded && "p-5 sm:p-6", className)}>
+    <section id={id} className={cx("card scroll-mt-24", padded && "p-5 sm:p-6", className)}>
       {(title || action) && (
-        <header className={cx("flex items-start justify-between gap-3", padded ? "mb-5" : "px-5 pt-5 mb-3")}>
+        <header className={cx("flex flex-wrap items-start justify-between gap-3", padded ? "mb-5" : "px-5 pt-5 mb-3")}>
           <div>
             {title && <h2 className="text-[15px] font-bold text-ink-900">{title}</h2>}
             {subtitle && <p className="text-sm text-mute mt-0.5">{subtitle}</p>}
@@ -116,14 +116,13 @@ export function EmptyState({ children, icon }: { children: ReactNode; icon?: Rea
   );
 }
 
-export function Stat({ label, value, hint, tone }: { label: string; value: ReactNode; hint?: ReactNode; tone?: Tone }) {
-  return (
-    <div className="card h-full p-5 sm:p-6">
-      <div className="text-xs font-medium text-mute">{label}</div>
-      <div className={cx("mt-3 text-3xl font-semibold display tracking-tight tabular-nums", tone === "danger" && "text-coral-600", tone === "warn" && "text-saffron-600", tone === "success" && "text-moss-600")}>{value}</div>
-      {hint && <div className="text-xs leading-relaxed text-mute mt-2">{hint}</div>}
-    </div>
-  );
+export function Stat({ label, value, hint, tone, href }: { label: string; value: ReactNode; hint?: ReactNode; tone?: Tone; href?: string }) {
+  const content = <>
+    <div className="flex items-start justify-between gap-2 text-xs font-medium text-mute"><span>{label}</span>{href && <span aria-hidden="true" className="text-ink-500">↗</span>}</div>
+    <div className={cx("mt-3 text-3xl font-semibold display tracking-tight tabular-nums", tone === "danger" && "text-coral-600", tone === "warn" && "text-saffron-600", tone === "success" && "text-moss-600")}>{value}</div>
+    {hint && <div className="mt-2 text-xs leading-relaxed text-mute">{hint}</div>}
+  </>;
+  return href ? <Link href={href} className="card stat-link block h-full p-4 sm:p-5">{content}</Link> : <div className="card h-full p-4 sm:p-5">{content}</div>;
 }
 
 export function Field({ label, children, hint, className }: { label: ReactNode; children: ReactNode; hint?: ReactNode; className?: string }) {
@@ -149,9 +148,9 @@ export function PageHeader({ title, subtitle, action, eyebrow }: { title: ReactN
   );
 }
 
-export function LinkButton({ href, children, variant = "secondary", className }: { href: string; children: ReactNode; variant?: "primary" | "secondary" | "ghost" | "accent"; className?: string }) {
+export function LinkButton({ href, children, variant = "secondary", className, ariaLabel }: { href: string; children: ReactNode; variant?: "primary" | "secondary" | "ghost" | "accent"; className?: string; ariaLabel?: string }) {
   return (
-    <Link href={href} className={cx(`btn-${variant}`, className)}>
+    <Link href={href} aria-label={ariaLabel} className={cx(`btn-${variant}`, className)}>
       {children}
     </Link>
   );

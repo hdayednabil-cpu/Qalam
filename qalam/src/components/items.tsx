@@ -7,7 +7,7 @@ import { t, statusLabel, revisionLabel } from "@/lib/i18n";
 import { Badge, MasteryDot, StatusBadge, cx, Progress } from "./ui";
 import { REVISION_GLYPH } from "@/lib/domain";
 
-export function SessionRow({ s, href, showStudents = true, compact = false }: { s: SessionView; href?: string; showStudents?: boolean; compact?: boolean }) {
+export function SessionRow({ s, href, showStudents = true, compact = false, audience = "tutor" }: { s: SessionView; href?: string; showStudents?: boolean; compact?: boolean; audience?: "tutor" | "family" }) {
   const inner = (
     <div className={cx("flex items-start gap-3", compact ? "py-3" : "py-4")}>
       <div className="w-14 shrink-0 rounded-xl border border-line bg-paper py-2 text-center">
@@ -21,7 +21,7 @@ export function SessionRow({ s, href, showStudents = true, compact = false }: { 
           <span className="text-sm text-mute tabular-nums">
             {formatTime(s.startsAt)} · {minutesLabel(s.durationMinutes)}
           </span>
-          {s.needsLog ? <Badge tone="warn">{t("tutor.needsLogging")}</Badge> : s.status !== "scheduled" && s.status !== "completed" ? <StatusBadge status={s.status} /> : null}
+          {s.needsLog ? <Badge tone="warn">{audience === "tutor" ? t("tutor.needsLogging") : "Summary pending"}</Badge> : s.status !== "scheduled" && s.status !== "completed" ? <StatusBadge status={s.status} /> : null}
           {s.mode === "online" ? (
             <span className="inline-flex items-center gap-1 text-xs text-mute">
               <Video size={12} /> {t("common.online")}

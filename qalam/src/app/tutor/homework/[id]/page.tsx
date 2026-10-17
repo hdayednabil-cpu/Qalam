@@ -1,3 +1,4 @@
+import { PendingButton } from "@/components/pending-button";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDb } from "@/db";
@@ -12,8 +13,9 @@ import { reviewAction } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomeworkReviewPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function HomeworkReviewPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ reviewChanged?: string }> }) {
   const { id } = await params;
+  const reviewChanged = (await searchParams).reviewChanged === "1";
   const user = await requireUser("tutor");
   const detail = await getHomeworkDetail(getDb(), user, id);
   if (!detail) notFound();
@@ -34,6 +36,7 @@ export default async function HomeworkReviewPage({ params }: { params: Promise<{
           </span>
         }
       />
+      {reviewChanged && <p role="status" className="rounded-xl border border-saffron-300 bg-saffron-100 p-4 text-sm text-saffron-700">This homework changed while your review was open. Your old review was not saved. The latest submission and status are shown below.</p>}
       {h.instructions && <p className="text-sm text-ink-800 max-w-2xl">{h.instructions}</p>}
       {linkedTopics.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
@@ -89,7 +92,7 @@ export default async function HomeworkReviewPage({ params }: { params: Promise<{
               );
             })}
           </div>
-          <div className="space-y-4 lg:sticky lg:top-4 self-start">
+          <div className="space-y-4 lg:sticky lg:top-24 self-start">
             {reviewable ? (
               <Card title={t("tutor.review")}>
                 <div className="space-y-3">
@@ -120,8 +123,8 @@ export default async function HomeworkReviewPage({ params }: { params: Promise<{
                     </div>
                   )}
                   <div className="grid gap-2 pt-2">
-                    <button className="btn-primary" name="action" value="approve" type="submit">{t("tutor.approve")}</button>
-                    <button className="btn-danger" name="action" value="corrections" type="submit">{t("tutor.requestCorrections")}</button>
+                    <PendingButton className="btn-primary" name="action" value="approve" pendingLabel="Approving…">{t("tutor.approve")}</PendingButton>
+                    <PendingButton className="btn-danger" name="action" value="corrections" pendingLabel="Sending corrections…">{t("tutor.requestCorrections")}</PendingButton>
                   </div>
                 </div>
               </Card>

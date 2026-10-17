@@ -13,8 +13,8 @@
   --color-ink-300: #9aacf1;
   --color-ink-400: #758beb;
   --color-ink-500: #526bde;
-  --color-ink-600: #4058ca;
-  --color-ink-700: #3448a7;
+  --color-ink-600: #5145cf;
+  --color-ink-700: #4034aa;
   --color-ink-800: #28365c;
   --color-ink-900: #17213b;
   --color-ink-950: #10182c;
@@ -66,94 +66,40 @@ button, summary { cursor: pointer; }
 @utility btn-accent { @apply btn bg-ink-600 text-white hover:bg-ink-700; }
 @utility btn-sm { @apply px-3! py-1.5! text-xs!; }
 
-.workspace-hero { background: #17213b; position: relative; isolation: isolate; overflow: hidden; }
-.workspace-hero::after { content: ""; position: absolute; z-index: -1; width: 280px; height: 280px; right: -40px; top: -100px; border: 1px solid #ffffff18; border-radius: 50%; box-shadow: 0 0 0 38px #ffffff06, 0 0 0 76px #ffffff04, 0 0 0 114px #ffffff03; pointer-events: none; }
+body { background: radial-gradient(ellipse at 95% 0%, #e9e5ff80, transparent 45%), radial-gradient(ellipse at 5% 60%, #dff6f040, transparent 40%); }
+.sidebar-surface { background-image: radial-gradient(ellipse at 0% 0%, #39327480, transparent 55%); }
+.nav-selected { background: linear-gradient(110deg, #6555df, #4439aa); box-shadow: inset 0 1px 0 #ffffff25, 0 5px 18px #00000018; }
+.journey-hero, .login-art { background: radial-gradient(ellipse at 95% 20%, #4f3589 0, transparent 55%), radial-gradient(ellipse at 55% 110%, #166a75 0, transparent 65%), #151d3b; }
+.journey-hero { box-shadow: inset 0 1px 0 #ffffff20, 0 14px 36px -20px #43328c70; }
+.learning-orbit { animation: orbit-arrive 4s cubic-bezier(.16,1,.3,1) both; }
+.stat-link { transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.stat-link:hover { transform: translateY(-3px); border-color: var(--color-ink-300); box-shadow: var(--shadow-lift); }
+.btn-primary { background-image: linear-gradient(115deg, #6151d9, #4059c7); box-shadow: inset 0 1px 0 #ffffff25, 0 4px 12px -5px #5145cf80; }
+.btn-primary:active, .btn-secondary:active { transform: translateY(1px); }
 .mobile-menu { width: min(100% - 2rem, 28rem); margin: auto auto max(5.5rem, env(safe-area-inset-bottom)); max-height: calc(100dvh - 8rem); }
+.mobile-menu[open] { animation: fade-up .2s ease-out both; }
 .mobile-menu::backdrop { background: rgb(16 24 44 / 45%); backdrop-filter: blur(4px); }
-.login-art { background: radial-gradient(ellipse at 70% 35%, #324776 0, #1a2949 45%, #10182c 85%); }
-.login-art::before { content: ""; position: absolute; inset: 0; opacity: .09; background-image: radial-gradient(#c3cef8 1px, transparent 1px); background-size: 28px 28px; }
-.lesson-sculpture { transform: rotate(-12deg); }
-.lesson-sheet { position: absolute; inset: 0; border-radius: 12px 38px 12px 12px; background: linear-gradient(145deg, #f7f9ff, #e0e7fc); box-shadow: -16px 24px 40px #080f2440; }
-.lesson-sheet:nth-child(1) { transform: rotate(-18deg) translate(-20px, 10px); background: #526bde; }
-.lesson-sheet:nth-child(2) { transform: rotate(-9deg) translate(-10px, 5px); background: #9aacf1; }
+.login-art::before { content: ""; position: absolute; inset: 0; opacity: .13; background-image: radial-gradient(#c3cef8 1px, transparent 1px); background-size: 28px 28px; }
 
 /* Page-zoom for homework review */
 .zoomable { cursor: zoom-in; transition: transform 0.2s ease; }
 .zoomable:hover { transform: scale(1.01); }
 
-/* ---------------------------------------------------------------------- */
-/* Motion system -- an orrery of slow, deliberate movement.                */
-/* Every animation here is disabled under prefers-reduced-motion below.    */
-/* ---------------------------------------------------------------------- */
-
-@keyframes orrery-spin-cw {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-@keyframes orrery-spin-ccw {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(-360deg); }
-}
-@keyframes orrery-pulse {
-  0%, 100% { opacity: 0.55; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.12); }
-}
-@keyframes ambient-drift-a {
-  0% { transform: translate(-4%, -2%) scale(1); }
-  50% { transform: translate(3%, 4%) scale(1.08); }
-  100% { transform: translate(-4%, -2%) scale(1); }
-}
-@keyframes ambient-drift-b {
-  0% { transform: translate(3%, 3%) scale(1.05); }
-  50% { transform: translate(-4%, -3%) scale(0.96); }
-  100% { transform: translate(3%, 3%) scale(1.05); }
-}
-@keyframes ambient-shimmer {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 0.6; }
+@keyframes orbit-arrive {
+  from { transform: translateY(12px) rotate(-12deg) scale(.92); }
+  to { transform: translateY(0) rotate(0) scale(1); }
 }
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
-@keyframes gleam-sweep {
-  from { transform: translateX(-140%) skewX(-12deg); }
-  to { transform: translateX(140%) skewX(-12deg); }
-}
-
-.orrery-ring-1 { animation: orrery-spin-cw 34s linear infinite; transform-origin: 50% 50%; }
-.orrery-ring-2 { animation: orrery-spin-ccw 22s linear infinite; transform-origin: 50% 50%; }
-.orrery-ring-3 { animation: orrery-spin-cw 14s linear infinite; transform-origin: 50% 50%; }
-.orrery-core { animation: orrery-pulse 5s ease-in-out infinite; transform-origin: 50% 50%; }
-
-.ambient-blob-a { animation: ambient-drift-a 22s ease-in-out infinite; }
-.ambient-blob-b { animation: ambient-drift-b 26s ease-in-out infinite; }
-.ambient-shimmer { animation: ambient-shimmer 6s ease-in-out infinite; }
-
-.fade-up { animation: fade-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
-.fade-up-1 { animation-delay: 0.06s; }
-.fade-up-2 { animation-delay: 0.14s; }
-.fade-up-3 { animation-delay: 0.22s; }
-.fade-up-4 { animation-delay: 0.3s; }
-
-.gleam {
-  position: relative;
-  overflow: hidden;
-}
-.gleam::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 40%, rgba(255, 255, 255, 0.18) 50%, transparent 60%);
-  animation: gleam-sweep 6s ease-in-out infinite;
-  animation-delay: 2s;
-}
-
+.fade-up { animation: fade-up .35s ease-out both; }
+.fade-up-1 { animation-delay: .06s; }
+.fade-up-2 { animation-delay: .14s; }
+.fade-up-3 { animation-delay: .22s; }
+.fade-up-4 { animation-delay: .3s; }
 @media (prefers-reduced-motion: reduce) {
-  .orrery-ring-1, .orrery-ring-2, .orrery-ring-3, .orrery-core,
-  .ambient-blob-a, .ambient-blob-b, .ambient-shimmer,
-  .fade-up, .gleam::after {
-    animation: none !important;
-  }
-  .fade-up { opacity: 1; transform: none; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .learning-orbit, .fade-up { animation: none !important; }
+  .stat-link:hover, .zoomable:hover { transform: none; }
 }

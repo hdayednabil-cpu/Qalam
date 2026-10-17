@@ -9,11 +9,11 @@ export default async function StudentLayout({ children }: { children: React.Reac
   const v = await getViewer("student");
   const unread = v.viewingAs ? 0 : (await unreadNotifications(getDb(), v.user.id)).length;
   const items: NavItem[] = [
-    { href: "/student", label: t("nav.home"), icon: "dashboard" },
-    { href: "/student/homework", label: t("nav.homework"), icon: "homework" },
+    { href: "/student", label: t("nav.home"), icon: "dashboard", mobile: true },
+    { href: "/student/homework", label: t("nav.homework"), icon: "homework", mobile: true },
     { href: "/student/sessions", label: t("nav.sessions"), icon: "sessions" },
-    { href: "/student/progress", label: t("nav.progress"), icon: "progress" },
-    { href: "/student/tests", label: t("nav.tests"), icon: "tests" },
+    { href: "/student/progress", label: t("nav.progress"), icon: "progress", mobile: true },
+    { href: "/student/tests", label: t("nav.tests"), icon: "tests", mobile: true },
     { href: "/student/resources", label: t("nav.resources"), icon: "resources" },
     { href: "/student/inbox", label: t("nav.inbox"), icon: "inbox" },
   ];

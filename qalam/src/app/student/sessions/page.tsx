@@ -12,8 +12,8 @@ export default async function Page() {
   return (
     <div className="max-w-3xl space-y-5">
       <PageHeader title={t("nav.sessions")} />
-      <Card title={t("tutor.upcoming")}>{ws.upcoming.length ? <div className="divide-y divide-line/70">{ws.upcoming.slice(0, 6).map((s) => <SessionRow key={s.id} s={s} showStudents={false} compact />)}</div> : <EmptyState>{t("empty.noSessions")}</EmptyState>}</Card>
-      <Card title="What we covered">{past.length ? <div className="divide-y divide-line/70">{past.map((s) => <SessionRow key={s.id} s={s} showStudents={false} />)}</div> : <EmptyState>{t("empty.noSessions")}</EmptyState>}</Card>
+      <Card title={t("tutor.upcoming")}>{ws.upcoming.length ? <div className="divide-y divide-line/70">{ws.upcoming.slice(0, 6).map((s) => <SessionRow key={s.id} s={s} showStudents={false} audience="family" compact />)}</div> : <EmptyState>{t("empty.noSessions")}</EmptyState>}</Card>
+      <Card title="What we covered">{past.length ? <div className="divide-y divide-line/70">{past.map((s) => <SessionRow key={s.id} s={s} showStudents={false} audience="family" />)}</div> : <EmptyState>{t("empty.noSessions")}</EmptyState>}</Card>
     </div>
   );
 }
