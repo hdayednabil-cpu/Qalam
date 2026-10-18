@@ -9,7 +9,6 @@ import { LearningOrbit } from "@/components/learning-orbit";
 import { LoginForm } from "./login-form";
 import { demoLogin } from "./actions";
 import { bootstrapTutor, demoEnabled } from "@/lib/bootstrap";
-import { MotionToggle } from "@/components/ambient-motion";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ passwordChanged?: string }> }) {
   const user = await getCurrentUser();
@@ -39,7 +38,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <Link href="/activate" className="font-semibold text-ink-600 hover:underline">
               {t("auth.haveCode")} →
             </Link>
-            <MotionToggle />
           </div>
           {demo && (
             <div className="mt-6 rounded-2xl border border-line bg-paper p-4 shadow-card">

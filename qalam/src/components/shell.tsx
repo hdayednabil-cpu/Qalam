@@ -8,7 +8,7 @@ import { t } from "@/lib/i18n";
 import { logout, clearViewAs } from "@/app/login/actions";
 import type { Role } from "@/db/schema";
 import { WorkspaceAtmosphere } from "./workspace-atmosphere";
-import { AmbientArt, MotionToggle } from "./ambient-motion";
+import { AmbientArt } from "./ambient-motion";
 
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
@@ -49,7 +49,6 @@ export function AppShell({ children, items, user, viewingAs, role, unread = 0 }:
           <div className="hidden md:block"><WorkspaceHeading items={items} /></div>
           <div className="flex items-center gap-3">
             <span className="hidden text-xs text-mute sm:block">A little progress, every day.</span>
-            <div className="hidden sm:block"><MotionToggle /></div>
             <Link href="/account" aria-label="Account settings" className="flex min-h-11 min-w-11 items-center justify-center rounded-xl"><Avatar name={user.displayName} hue={user.hue ?? 220} size={32} /></Link>
             <form action={logout} className="md:hidden"><PendingButton pendingLabel="Signing out…" iconOnly type="submit" aria-label={t("nav.signOut")} className="rounded-lg p-2 text-mute hover:bg-ink-50"><LogOut size={17} /></PendingButton></form>
           </div>

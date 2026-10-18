@@ -2,6 +2,7 @@ import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import * as schema from "./schema";
+import { databasePoolOptions } from "./pool-options";
 
 export type DB = PgDatabase<PgQueryResultHKT, typeof schema>;
 
@@ -9,15 +10,20 @@ export type DB = PgDatabase<PgQueryResultHKT, typeof schema>;
 // so the instance is parked on globalThis to avoid opening PGlite twice.
 const g = globalThis as unknown as { __qalamDb?: DB; __qalamPglite?: import("@electric-sql/pglite").PGlite };
 
-export function getDb(): DB {
-  if (g.__qalamDb) return g.__qalamDb;
+export function getDb(purpose: "runtime" | "migration" = "runtime"): DB {
+  if (purpose === "runtime" && g.__qalamDb) return g.__qalamDb;
   const url = process.env.DATABASE_URL?.trim();
   if (url) {
     // Postgres / Supabase. `pg` is a CommonJS module; require keeps it off the bundle.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Pool } = require("pg") as typeof import("pg");
-    const pool = new Pool({ connectionString: url, max: 5 });
-    g.__qalamDb = drizzlePg(pool, { schema }) as unknown as DB;
+    const pool = new Pool(databasePoolOptions(url, purpose === "runtime" && process.env.VERCEL === "1"));
+    // An idle socket can fail after a database restart; pg removes that client.
+    // Handle its event without logging credentials, query parameters or student data.
+    pool.on("error", () => console.error("Database pool: an idle connection closed unexpectedly."));
+    const db = drizzlePg(pool, { schema }) as unknown as DB;
+    if (purpose === "migration") return db;
+    g.__qalamDb = db;
   } else {
     // Embedded Postgres (PGlite) persisted under ./data/pg — zero setup.
     // eslint-disable-next-line @typescript-eslint/no-require-imports

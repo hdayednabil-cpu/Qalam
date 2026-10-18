@@ -3,7 +3,6 @@ import { requireUser, homeFor } from "@/lib/auth";
 import { Card } from "@/components/ui";
 import { Wordmark } from "@/components/shell";
 import { PasswordForm } from "./password-form";
-import { MotionToggle } from "@/components/ambient-motion";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +13,6 @@ export default async function AccountPage() {
       <div className="mx-auto max-w-lg space-y-7">
         <div className="flex items-center justify-between gap-4">
           <Link href={homeFor(user.role)}><Wordmark /></Link>
-          <MotionToggle />
           <Link href={homeFor(user.role)} className="text-sm text-mute hover:underline">Back to dashboard</Link>
         </div>
         <div>

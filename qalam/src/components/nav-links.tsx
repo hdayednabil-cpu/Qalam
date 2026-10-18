@@ -3,7 +3,6 @@ import Link from "@/components/app-link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { cx } from "./ui";
-import { MotionToggle } from "./ambient-motion";
 import { routeMatches as matches, mobileNavigation, workspaceLabel } from "@/lib/navigation";
 import type { LucideIcon } from "lucide-react";
 import { LayoutDashboard, Users, CalendarDays, BookOpenCheck, ClipboardList, Library, KeyRound, Search, Sparkles, BookMarked, MessageSquareText, FileText, Inbox, MoreHorizontal, X, ChevronRight } from "lucide-react";
@@ -36,7 +35,6 @@ export function NavLinks({ items, variant }: { items: NavItem[]; variant: "side"
       {more && <dialog id="workspace-navigation" ref={menu} onClose={() => setOpen(false)} aria-labelledby="navigation-title" className="mobile-menu rounded-2xl border border-line bg-white p-4 text-ink-900 shadow-lift" onClick={(event) => { if (event.target === event.currentTarget) menu.current?.close(); }}>
         <div className="mb-3 flex items-center justify-between pl-2"><h2 id="navigation-title" className="text-base font-bold">Your workspace</h2><button type="button" aria-label="Close navigation" onClick={() => menu.current?.close()} className="rounded-lg p-2 hover:bg-paper"><X size={20} /></button></div>
         <nav aria-label="All navigation" className="grid gap-1">{items.map((it) => { const Icon = ICONS[it.icon]; const active = matches(path, it.href); return <Link key={it.href} href={it.href} onClick={() => menu.current?.close()} aria-current={active ? "page" : undefined} className={cx("nav-item flex items-center gap-3 rounded-xl px-3 py-3 text-sm", active ? "bg-ink-50 font-semibold text-ink-700" : "hover:bg-paper")}><Icon size={18} /><span className="flex-1">{it.label}</span>{!!it.badge && <span className="rounded-md bg-coral-100 px-2 text-coral-700">{it.badge}</span>}</Link>; })}</nav>
-        <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-sm"><span>Background animation</span><MotionToggle /></div>
       </dialog>}
     </>;
   }
