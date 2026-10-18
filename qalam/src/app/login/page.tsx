@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { PendingButton } from "@/components/pending-button";
+import Link from "@/components/app-link";
 import { redirect } from "next/navigation";
 import { getCurrentUser, homeFor } from "@/lib/auth";
 import { t } from "@/lib/i18n";
@@ -48,9 +49,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                 {(["tutor", "parent", "student"] as const).map((who) => (
                   <form key={who} action={demoLogin}>
                     <input type="hidden" name="who" value={who} />
-                    <button className="btn-secondary w-full bg-white" type="submit">
+                    <PendingButton pendingLabel="Signing in…" className="btn-secondary w-full bg-white" type="submit">
                       {t(who === "tutor" ? "auth.demoTutor" : who === "parent" ? "auth.demoParent" : "auth.demoStudent")}
-                    </button>
+                    </PendingButton>
                   </form>
                 ))}
               </div>

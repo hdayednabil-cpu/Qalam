@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 export default function NotFound() {
   return (
     <div className="min-h-dvh grid place-items-center p-6 text-center">

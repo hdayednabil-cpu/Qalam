@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import type { ReactNode } from "react";
 import type { Mastery } from "@/db/schema";
 import { MASTERY_TONE } from "@/lib/domain";

@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from "react";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { ArrowUpRight } from "lucide-react";
 
 /** Qalam's learning constellation: decorative, lightweight and independent of student data. */

@@ -119,7 +119,7 @@ export function SubmitWork({ homeworkId, resubmit, labels, requirement = "photos
               <div className="aspect-[3/4] bg-stone-100 grid place-items-center relative">
                 {p.preview ? <img src={p.preview} alt={p.name} className="h-full w-full object-cover" /> : <span className="text-xs text-mute px-2 text-center">{p.name}</span>}
                 {(p.status === "converting" || p.status === "uploading") && (
-                  <div className="absolute inset-0 grid place-items-center bg-white/70 text-xs font-medium"><Loader2 className="animate-spin mr-1" size={16} /> {p.status === "converting" ? labels.converting : labels.uploading}</div>
+                  <div role="status" className="absolute inset-0 grid place-items-center bg-white/70 text-xs font-medium"><Loader2 className="animate-spin mr-1" size={16} aria-hidden="true" /> {p.status === "converting" ? labels.converting : labels.uploading}</div>
                 )}
                 {p.status === "error" && <div className="absolute inset-0 grid place-items-center bg-coral-100/90 text-xs text-coral-700 p-2 text-center">{p.error}</div>}
                 <span className="absolute top-1 left-1 rounded-full bg-ink-900/80 text-white text-[11px] px-1.5">{i + 1}</span>
@@ -140,6 +140,7 @@ export function SubmitWork({ homeworkId, resubmit, labels, requirement = "photos
         type="button"
         className="btn-accent w-full sm:w-auto"
         disabled={!complete || failed || busy || pending}
+        aria-busy={pending}
         onClick={() =>
           start(async () => {
             setError(null);
@@ -153,7 +154,7 @@ export function SubmitWork({ homeworkId, resubmit, labels, requirement = "photos
           })
         }
       >
-        {pending ? <Loader2 className="animate-spin" size={16} /> : null} {resubmit ? labels.resubmit : labels.submitWork} {ready.length ? `(${ready.length})` : ""}
+        {pending ? <><Loader2 className="animate-spin" size={16} aria-hidden="true" /><span role="status">Submitting your work…</span></> : <>{resubmit ? labels.resubmit : labels.submitWork} {ready.length ? `(${ready.length})` : ""}</>}
       </button>
     </div>
   );

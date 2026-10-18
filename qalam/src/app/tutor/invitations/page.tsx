@@ -1,3 +1,4 @@
+import { PendingButton } from "@/components/pending-button";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { listAccounts, listInvitations, listStudents } from "@/lib/queries";
@@ -36,12 +37,12 @@ export default async function InvitationsPage() {
                   <span className="ml-auto flex items-center gap-2">
                     {st === "pending" && <ShareActions text={`Hi! Your ${t("app.name")} code is ${i.code}. Activate at ${appUrl}/activate?code=${i.code}`} phone={i.guardian?.phone} labels={{ copy: t("common.copy"), copied: t("common.copied"), whatsapp: t("common.whatsapp") }} />}
                     {st === "pending" && (
-                      <form action={invitationAction}><input type="hidden" name="revoke" value={i.id} /><button className="btn-ghost btn-sm" type="submit">{t("tutor.revoke")}</button></form>
+                      <form action={invitationAction}><input type="hidden" name="revoke" value={i.id} /><PendingButton pendingLabel="Updating invitation…" className="btn-ghost btn-sm" type="submit">{t("tutor.revoke")}</PendingButton></form>
                     )}
                     {(st === "expired" || st === "revoked") && (
                       <form action={invitationAction}>
                         {i.studentId ? <input type="hidden" name="studentId" value={i.studentId} /> : <input type="hidden" name="guardianId" value={i.guardianId ?? ""} />}
-                        <button className="btn-secondary btn-sm" type="submit">{t("tutor.regenerate")}</button>
+                        <PendingButton pendingLabel="Updating invitation…" className="btn-secondary btn-sm" type="submit">{t("tutor.regenerate")}</PendingButton>
                       </form>
                     )}
                   </span>
@@ -70,12 +71,12 @@ export default async function InvitationsPage() {
                     <input type="hidden" name="userId" value={a.id} />
                     <input type="hidden" name="op" value="reset" />
                     <input name="password" className="input py-1 text-xs w-36" placeholder="new password" minLength={8} required />
-                    <button className="btn-ghost btn-sm" type="submit">{t("tutor.resetPassword")}</button>
+                    <PendingButton pendingLabel="Updating account…" className="btn-ghost btn-sm" type="submit">{t("tutor.resetPassword")}</PendingButton>
                   </form>
                   <form action={accountAction}>
                     <input type="hidden" name="userId" value={a.id} />
                     <input type="hidden" name="op" value={a.status === "active" ? "deactivate" : "reactivate"} />
-                    <button className={a.status === "active" ? "btn-danger btn-sm" : "btn-secondary btn-sm"} type="submit">{a.status === "active" ? t("tutor.deactivate") : t("tutor.reactivate")}</button>
+                    <PendingButton pendingLabel="Updating account…" className={a.status === "active" ? "btn-danger btn-sm" : "btn-secondary btn-sm"} type="submit">{a.status === "active" ? t("tutor.deactivate") : t("tutor.reactivate")}</PendingButton>
                   </form>
                 </span>
               </div>

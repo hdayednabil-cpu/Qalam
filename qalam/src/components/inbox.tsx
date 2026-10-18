@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { PendingButton } from "@/components/pending-button";
+import Link from "@/components/app-link";
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import * as sch from "@/db/schema";
@@ -13,7 +14,7 @@ export async function InboxPage({ userId }: { userId: string }) {
   const unread = items.filter((n) => !n.readAt).length;
   return (
     <div className="max-w-2xl">
-      <PageHeader title={t("nav.inbox")} subtitle={unread ? `${unread} unread` : t("common.allCaughtUp")} action={unread ? <form action={markReadAction}><button className="btn-secondary" type="submit">Mark all read</button></form> : undefined} />
+      <PageHeader title={t("nav.inbox")} subtitle={unread ? `${unread} unread` : t("common.allCaughtUp")} action={unread ? <form action={markReadAction}><PendingButton pendingLabel="Marking read…" className="btn-secondary" type="submit">Mark all read</PendingButton></form> : undefined} />
       <Card padded={false}>
         {items.length ? (
           <ul className="divide-y divide-line/70">

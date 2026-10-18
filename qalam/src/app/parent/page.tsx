@@ -1,5 +1,5 @@
 import { JourneyHero } from "@/components/learning-orbit";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { canSee } from "@/lib/access";
 import { strengths, weaknesses } from "@/lib/domain";
 import { t } from "@/lib/i18n";

@@ -1,5 +1,5 @@
 import { PendingButton } from "@/components/pending-button";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { notFound } from "next/navigation";
 import { getDb } from "@/db";
 import * as sch from "@/db/schema";

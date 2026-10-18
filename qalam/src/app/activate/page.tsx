@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { Wordmark } from "@/components/shell";
 import { t } from "@/lib/i18n";
 import { ActivateForm } from "./activate-form";

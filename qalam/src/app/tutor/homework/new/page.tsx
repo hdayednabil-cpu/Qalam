@@ -1,3 +1,4 @@
+import { PendingButton } from "@/components/pending-button";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/auth";
@@ -66,7 +67,7 @@ export default async function NewHomeworkPage({ searchParams }: { searchParams: 
             ))}
           </div>
         </Card>
-        <button className="btn-primary" type="submit">{t("tutor.assignHomework")}</button>
+        <PendingButton pendingLabel="Assigning…" className="btn-primary" type="submit">{t("tutor.assignHomework")}</PendingButton>
       </form>
     </div>
   );

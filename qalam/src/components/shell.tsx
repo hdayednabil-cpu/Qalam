@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { PendingButton } from "@/components/pending-button";
+import Link from "@/components/app-link";
 import type { ReactNode } from "react";
 import { ArrowUpRight, LogOut, Settings2 } from "lucide-react";
 import { NavLinks, WorkspaceHeading, type NavItem } from "./nav-links";
@@ -6,6 +7,7 @@ import { Avatar } from "./ui";
 import { t } from "@/lib/i18n";
 import { logout, clearViewAs } from "@/app/login/actions";
 import type { Role } from "@/db/schema";
+import { WorkspaceAtmosphere } from "./workspace-atmosphere";
 
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
@@ -33,24 +35,25 @@ export function AppShell({ children, items, user, viewingAs, role, unread = 0 }:
           <div className="flex items-center gap-3 border-t border-white/10 px-2 pt-5">
             <Avatar name={user.displayName} hue={user.hue ?? 220} size={36} />
             <div className="min-w-0 flex-1"><div className="truncate text-xs font-semibold">{user.displayName}</div><div className="mt-1 text-[11px] text-slate-400">{t(`roles.${role}`)}</div></div>
-            <form action={logout}><button type="submit" aria-label={t("nav.signOut")} title={t("nav.signOut")} className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white"><LogOut size={17} /></button></form>
+            <form action={logout}><PendingButton pendingLabel="Signing out…" iconOnly type="submit" aria-label={t("nav.signOut")} title={t("nav.signOut")} className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white"><LogOut size={17} /></PendingButton></form>
           </div>
         </div>
       </aside>
-      <div className="min-w-0 flex flex-col">
+      <div className="workspace-surface relative isolate min-w-0 flex flex-col">
+        <WorkspaceAtmosphere />
         <header className="sticky top-0 z-20 flex min-h-[68px] items-center justify-between gap-3 border-b border-line bg-white/90 backdrop-blur-xl px-5 md:px-8 xl:px-10">
           <Link href={items[0].href} className="md:hidden"><Wordmark /></Link>
           <div className="hidden md:block"><WorkspaceHeading items={items} /></div>
           <div className="flex items-center gap-3">
             <span className="hidden text-xs text-mute sm:block">A little progress, every day.</span>
             <Link href="/account" aria-label="Account settings" className="flex min-h-11 min-w-11 items-center justify-center rounded-xl"><Avatar name={user.displayName} hue={user.hue ?? 220} size={32} /></Link>
-            <form action={logout} className="md:hidden"><button type="submit" aria-label={t("nav.signOut")} className="rounded-lg p-2 text-mute hover:bg-ink-50"><LogOut size={17} /></button></form>
+            <form action={logout} className="md:hidden"><PendingButton pendingLabel="Signing out…" iconOnly type="submit" aria-label={t("nav.signOut")} className="rounded-lg p-2 text-mute hover:bg-ink-50"><LogOut size={17} /></PendingButton></form>
           </div>
         </header>
         {viewingAs && (
           <div className="flex items-center justify-between gap-3 bg-saffron-100 px-5 py-3 text-sm text-saffron-700 md:px-8">
             <span>Viewing <strong>{viewingAs.label}</strong>’s {t(`roles.${viewingAs.role}`).toLowerCase()} workspace. Tutor permissions still apply.</span>
-            <form action={clearViewAs}><button className="btn-secondary btn-sm" type="submit">Exit preview</button></form>
+            <form action={clearViewAs}><PendingButton pendingLabel="Leaving preview…" className="btn-secondary btn-sm" type="submit">Exit preview</PendingButton></form>
           </div>
         )}
         <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-[1440px] flex-1 px-5 py-7 pb-28 md:px-8 md:py-9 xl:px-10">{children}</main>

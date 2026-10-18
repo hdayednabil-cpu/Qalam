@@ -1,5 +1,6 @@
 "use client";
 import { useActionState } from "react";
+import { LoaderCircle } from "lucide-react";
 import { activate, type ActivateState } from "./actions";
 
 export function ActivateForm({ labels, initialCode }: { labels: Record<string, string>; initialCode?: string }) {
@@ -39,9 +40,9 @@ export function ActivateForm({ labels, initialCode }: { labels: Record<string, s
           </label>
         </>
       )}
-      {state.error && <p className="rounded-xl bg-coral-100 px-3 py-2 text-sm text-coral-700">{state.error}</p>}
-      <button className="btn-primary w-full" disabled={pending} type="submit">
-        {state.step === "code" ? labels.next : labels.activate}
+      {state.error && <p role="alert" className="rounded-xl bg-coral-100 px-3 py-2 text-sm text-coral-700">{state.error}</p>}
+      <button className="btn-primary w-full" disabled={pending} aria-busy={pending} type="submit">
+        {pending && <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />}<span role={pending ? "status" : undefined}>{pending ? (state.step === "code" ? "Checking invitation…" : "Activating account…") : state.step === "code" ? labels.next : labels.activate}</span>
       </button>
     </form>
   );

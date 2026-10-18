@@ -20,8 +20,8 @@ export function LoginForm({ labels }: { labels: { identifier: string; password: 
         </div>
       </div>
       {state?.error && <p id="login-error" role="alert" className="rounded-xl bg-coral-100 px-3 py-2 text-sm text-coral-700">{state.error === "throttled" ? labels.throttled : labels.invalid}</p>}
-      <button className="btn-primary mt-1 w-full py-3" disabled={pending} type="submit">
-        {pending ? <><LoaderCircle size={16} className="animate-spin" aria-hidden="true" /> Signing in…</> : labels.signIn}
+      <button className="btn-primary mt-1 w-full py-3" disabled={pending} aria-busy={pending} type="submit">
+        {pending ? <><LoaderCircle size={16} className="animate-spin" aria-hidden="true" /><span role="status">Signing in…</span></> : labels.signIn}
       </button>
     </form>
   );

@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { PendingButton } from "@/components/pending-button";
+import Link from "@/components/app-link";
 import { Plus } from "lucide-react";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/auth";
@@ -139,7 +140,7 @@ export default async function TutorDashboard() {
                   <li key={n.id} className="flex items-start gap-2 text-sm">
                     <form action={nextStepAction}>
                       <input type="hidden" name="done" value={n.id} />
-                      <button className="mt-0.5 size-4 rounded-full border-2 border-ink-300 hover:bg-moss-100" title={t("common.markDone")} type="submit" />
+                      <PendingButton pendingLabel="Updating…" iconOnly className="mt-0.5 size-4 rounded-full border-2 border-ink-300 hover:bg-moss-100" title={t("common.markDone")} type="submit" />
                     </form>
                     <span>
                       <span className="text-mute">{n.studentName}: </span>

@@ -1,5 +1,5 @@
 import { PendingButton } from "@/components/pending-button";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { listBlackouts, listStudents, sessionsBetween } from "@/lib/queries";
@@ -35,7 +35,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
             <LinkButton ariaLabel="Previous week" href={`/tutor/calendar?week=${addDaysKey(start, -7)}`}>←</LinkButton>
             <LinkButton href="/tutor/calendar">{t("common.today")}</LinkButton>
             <LinkButton ariaLabel="Next week" href={`/tutor/calendar?week=${addDaysKey(start, 7)}`}>→</LinkButton>
-            <form action={generateSessionsAction}><button className="btn-secondary" type="submit">{t("tutor.generateSessions")}</button></form>
+            <form action={generateSessionsAction}><PendingButton pendingLabel="Generating…" className="btn-secondary" type="submit">{t("tutor.generateSessions")}</PendingButton></form>
           </>
         }
       />
@@ -101,7 +101,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
               {blackouts.map((b) => (
                 <li key={b.id} className="flex items-center justify-between">
                   <span>{formatDate(b.startDate)} – {formatDate(b.endDate)} · {b.reason}</span>
-                  <form action={blackoutAction}><input type="hidden" name="remove" value={b.id} /><button className="btn-ghost btn-sm" type="submit">{t("common.delete")}</button></form>
+                  <form action={blackoutAction}><input type="hidden" name="remove" value={b.id} /><PendingButton pendingLabel="Updating…" className="btn-ghost btn-sm" type="submit">{t("common.delete")}</PendingButton></form>
                 </li>
               ))}
               {!blackouts.length && <li className="text-mute">{t("common.none")}</li>}
@@ -110,7 +110,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
               <input aria-label="Blackout start date" name="start" type="date" className="input" required />
               <input aria-label="Blackout end date" name="end" type="date" className="input" />
               <input aria-label="Blackout reason" name="reason" className="input col-span-2" placeholder="Reason (e.g. Eid break)" required />
-              <button className="btn-secondary col-span-2" type="submit">{t("common.add")}</button>
+              <PendingButton pendingLabel="Updating…" className="btn-secondary col-span-2" type="submit">{t("common.add")}</PendingButton>
             </form>
           </Card>
         </div>

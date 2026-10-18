@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { listStudents } from "@/lib/queries";

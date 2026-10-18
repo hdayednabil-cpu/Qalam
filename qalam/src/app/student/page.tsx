@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { Award, CheckCircle2, ArrowUpRight } from "lucide-react";
 import { JourneyHero } from "@/components/learning-orbit";
 import { getDb } from "@/db";

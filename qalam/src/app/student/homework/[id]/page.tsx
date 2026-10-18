@@ -1,5 +1,6 @@
+import { PendingButton } from "@/components/pending-button";
 import { MAX_FILE_MB, MAX_PAGES } from "@/lib/upload-limits";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { notFound } from "next/navigation";
 import { getDb } from "@/db";
 import { getViewer } from "@/lib/auth";
@@ -46,7 +47,7 @@ export default async function StudentHomeworkPage({ params }: { params: Promise<
       {canSubmit && (
         <Card title={view.effectiveStatus === "corrections_requested" ? t("student.resubmit") : h.submissionRequirement === "typed" ? "Write your answer" : h.submissionRequirement === "none" ? "Mark your work ready" : t("student.uploadPages")}>
           {h.status === "assigned" && (
-            <form action={startHomeworkAction} className="mb-3"><input type="hidden" name="homeworkId" value={h.id} /><button className="btn-ghost btn-sm" type="submit">I've started this</button></form>
+            <form action={startHomeworkAction} className="mb-3"><input type="hidden" name="homeworkId" value={h.id} /><PendingButton pendingLabel="Starting…" className="btn-ghost btn-sm" type="submit">I've started this</PendingButton></form>
           )}
           <SubmitWork requirement={h.submissionRequirement} homeworkId={h.id} resubmit={view.effectiveStatus === "corrections_requested"} labels={labels} />
         </Card>

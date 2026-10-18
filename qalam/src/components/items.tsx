@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { Clock, MapPin, Video, AlertTriangle, Info, Flame, CheckCircle2, Circle } from "lucide-react";
 import type { SessionView, HomeworkView, AssessmentView, Alert } from "@/lib/queries";
 import type { TopicView } from "@/lib/domain";

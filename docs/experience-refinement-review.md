@@ -67,3 +67,23 @@ After explicit authorization to update the draft branch and create a Vercel prev
 5. Create, move, cancel and log lessons, including no-shows; verify family package balances and notification destinations.
 6. Check slow/failed upload feedback, mobile camera/file selection, overflowing text, fixed navigation and the More dialog.
 7. Approve the design only after these visual checks and the user's review. Merging and production deployment require separate explicit authorization.
+
+## October 18: responsiveness and detail pass
+
+Follow-up to the owner's preview feedback: many actions felt frozen, secondary tabs lacked motion, and backgrounds felt too plain.
+
+- Added a shared Next.js link wrapper using the router's actual pending state. Pending navigation shows a top progress strip, a readable status and a local link cue; no timer-based pretend progress. Native link semantics and framework prefetching are preserved.
+- Added root and role-specific loading boundaries, so dynamic routes can display a loading layout while content arrives. Added short workspace arrival motion across tutor, parent, student and account routes.
+- Converted 36 remaining server form submit buttons to shared pending feedback. The shared control preserves space for its pending state, disables duplicate submission and only announces the selected action in multi-button forms. Small icon controls retain accessible labels.
+- Added explicit search, invitation activation, clipboard and homework submission statuses. Clipboard rejection now has a visible error. Login/password status accessibility improved.
+- Added lightweight server-rendered book and geometry outlines, layered violet/teal backgrounds and tactile hover/press states. Decorative movement settles; reduced-motion settings disable movement. Artwork requires no image downloads or animation loop.
+- Parallelised independent workspace database reads after authorization. Roster work is bounded to two workspaces concurrently. Search loads each workspace once; the dashboard reuses session data. Completed group lessons now count once.
+- Added four regression tests for search query counts/results, dashboard session reuse/group lesson counting, personal-package precedence/freshness and authorization before workspace reads.
+
+Validation: 56 tests passed across nine files; production build, type validation and diff whitespace checks passed. Tests use synthetic isolated local data. Production response-time savings are not yet benchmarked. Large rosters still need dedicated batched summary queries for scale.
+
+Browser verification limitation: the prior automation attempt was rejected by the browser's automatic security review. No alternate browser or indirect bypass was attempted. Authenticated/mobile visual review of this revision, slow-network navigation, focus behaviour and real device camera/upload interaction remain pending. Screenshots and recordings supplied by the owner can inform the next pass.
+
+Recommendation remains to keep PR #2 in draft until the owner has reviewed the refreshed preview and authenticated/mobile appearance is verified. No production release or merge is authorized by this work.
+
+The broader student-first AI product proposal, competitor findings, preliminary token-cost scenarios and required pilot inputs are in `docs/ai-first-product-plan.md`. Those are proposals, not implemented capabilities.
