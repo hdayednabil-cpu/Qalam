@@ -9,6 +9,7 @@ import { LearningOrbit } from "@/components/learning-orbit";
 import { LoginForm } from "./login-form";
 import { demoLogin } from "./actions";
 import { bootstrapTutor, demoEnabled } from "@/lib/bootstrap";
+import { MotionToggle } from "@/components/ambient-motion";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ passwordChanged?: string }> }) {
   const user = await getCurrentUser();
@@ -34,10 +35,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           {passwordChanged && <p role="status" className="mb-4 rounded-xl bg-moss-100 px-3 py-2 text-sm text-moss-700">Your password has been changed and all sessions signed out. Sign in with your new password.</p>}
           <LoginForm labels={{ identifier: t("auth.identifier"), password: t("auth.password"), signIn: t("auth.signIn"), invalid: t("auth.invalid"), throttled: t("auth.tooManyAttempts") }} />
           <p className="mt-3 text-xs text-mute">{t("auth.forgot")}</p>
-          <div className="mt-8 border-t border-line pt-6 text-sm">
+          <div className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-6 text-sm">
             <Link href="/activate" className="font-semibold text-ink-600 hover:underline">
               {t("auth.haveCode")} →
             </Link>
+            <MotionToggle />
           </div>
           {demo && (
             <div className="mt-6 rounded-2xl border border-line bg-paper p-4 shadow-card">

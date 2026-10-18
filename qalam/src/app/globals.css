@@ -71,7 +71,7 @@ body { background: radial-gradient(ellipse at 95% 0%, #e9e5ff80, transparent 45%
 .nav-selected { background: linear-gradient(110deg, #6555df, #4439aa); box-shadow: inset 0 1px 0 #ffffff25, 0 5px 18px #00000018; }
 .journey-hero, .login-art { background: radial-gradient(ellipse at 95% 20%, #4f3589 0, transparent 55%), radial-gradient(ellipse at 55% 110%, #166a75 0, transparent 65%), #151d3b; }
 .journey-hero { box-shadow: inset 0 1px 0 #ffffff20, 0 14px 36px -20px #43328c70; }
-.learning-orbit { animation: orbit-arrive 4s cubic-bezier(.16,1,.3,1) both; }
+.learning-orbit { animation: orbit-drift 14s ease-in-out infinite; transition: opacity .25s ease; }
 .stat-link { transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
 .stat-link:hover { transform: translateY(-3px); border-color: var(--color-ink-300); box-shadow: var(--shadow-lift); }
 .btn-primary { background-image: linear-gradient(115deg, #6151d9, #4059c7); box-shadow: inset 0 1px 0 #ffffff25, 0 4px 12px -5px #5145cf80; }
@@ -100,21 +100,43 @@ body { background: radial-gradient(ellipse at 95% 0%, #e9e5ff80, transparent 45%
 .fade-up-4 { animation-delay: .3s; }
 
 /* Interaction feedback stays short. Loading is driven by router/form state. */
-button, .qalam-link, summary {
+button, .qalam-link, a[class*="btn-"], summary {
   -webkit-tap-highlight-color: transparent;
-  transition: transform .16s ease, background-color .16s ease, border-color .16s ease, box-shadow .16s ease, color .16s ease;
+  transition: transform .18s cubic-bezier(.2,.8,.2,1), background-color .16s ease, border-color .16s ease, box-shadow .18s ease, color .16s ease;
 }
-button:enabled:active, .qalam-link:active, summary:active { transform: translateY(1px) scale(.98); }
+button:enabled:active, .qalam-link:active, a[class*="btn-"]:active, summary:active { transform: translateY(1px) scale(.985); transition-duration: .07s; }
 button:disabled { cursor: not-allowed; }
 button[aria-busy="true"] { cursor: progress; }
 .qalam-link:has(> .link-pending-marker) { cursor: progress; box-shadow: inset 0 -2px currentColor; }
 .link-pending-marker { display: none; }
-@media (hover: hover) {
-  button:enabled:hover, .qalam-link[class*="btn-"]:hover { transform: translateY(-1px); }
-  button:enabled:active, .qalam-link:active { transform: translateY(1px) scale(.98); }
-  .qalam-link > svg { transition: transform .2s ease; }
-  .qalam-link:hover > svg { transform: translateY(-1px); }
+@media (hover: hover) and (pointer: fine) {
+  button:enabled:hover, a[class*="btn-"]:hover { transform: translateY(-2px); }
+  button:enabled:active, .qalam-link:active, a[class*="btn-"]:active { transform: translateY(1px) scale(.985); }
+  .qalam-link > svg, button svg { transition: transform .18s cubic-bezier(.2,.8,.2,1); }
+  .qalam-link:hover > svg, button:enabled:hover svg { transform: translateY(-1px); }
+  :is(.btn-primary, .btn-accent):not(:disabled):hover::before { opacity: 1; }
+  :is(.btn-primary, .btn-accent):not(:disabled):hover { box-shadow: inset 0 1px 0 #ffffff40, 0 6px 16px -7px #5145cf90; }
+  :is(.btn-secondary, .btn-ghost, .motion-toggle):not(:disabled):hover { background-color: #e8e8ff; border-color: #9aacf1; color: #35278f; box-shadow: 0 4px 12px -8px #5145cf70; }
+  .btn-danger:not(:disabled):hover { background-color: #ffe0d8; border-color: #d66552; }
+  .nav-item:hover { background-color: #e8e8ff; color: #4034aa; box-shadow: inset 3px 0 0 #758beb; }
+  .sidebar-surface .nav-item:hover { background-color: #ffffff14; color: #fff; box-shadow: inset 3px 0 0 #a5f5e0; transform: translateX(2px); }
+  .sidebar-surface .nav-selected:hover { box-shadow: inset 3px 0 0 #a5f5e0, inset 0 1px 0 #ffffff35, 0 5px 18px #00000018; }
+  .interactive-row:hover { background-color: #eeedff; box-shadow: inset 3px 0 0 #9aacf1; transform: translateX(2px); }
+  .qalam-link.card:hover { transform: translateY(-3px); border-color: #9aacf1; background-color: #fbfaff; box-shadow: var(--shadow-lift); }
+  .qalam-link.card:active { transform: translateY(0) scale(.995); }
+  .wordmark:hover .brand-symbol-frame, a:focus-visible .brand-symbol-frame { transform: rotate(-7deg) scale(1.06); color: #758beb; }
+  .journey-hero:has(a:hover) .learning-orbit { opacity: .65; }
 }
+:is(.btn-primary, .btn-accent) { position: relative; isolation: isolate; }
+:is(.btn-primary, .btn-accent)::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; background: linear-gradient(115deg, #5140be, #3151b5); opacity: 0; transition: opacity .18s ease; }
+:is(.btn-primary, .btn-accent):focus-visible::before { opacity: 1; }
+.nav-item:focus-visible, .interactive-row:focus-visible { box-shadow: inset 3px 0 0 #758beb; }
+.qalam-link.card:focus-visible { border-color: #758beb; box-shadow: var(--shadow-lift); }
+.brand-symbol-frame { display: inline-flex; transition: transform .28s cubic-bezier(.2,.8,.2,1), color .2s ease; }
+.brand-symbol { display: inline-flex; animation: brand-float 5s ease-in-out infinite; }
+[data-ambient][data-in-view="false"], html[data-page-hidden="true"] [data-ambient], html[data-ambient-motion="paused"] [data-ambient] { animation-play-state: paused; }
+@keyframes brand-float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-2px) rotate(2deg); } }
+@keyframes orbit-drift { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(3deg); } }
 .pending-button-stack { display: inline-grid; align-items: center; justify-items: center; }
 .pending-button-content { grid-area: 1 / 1; display: inline-flex; align-items: center; justify-content: center; gap: .5rem; }
 .navigation-feedback { position: fixed; inset: 0; z-index: 100; pointer-events: none; }
@@ -140,4 +162,6 @@ button[aria-busy="true"] { cursor: progress; }
   .stat-link:hover, .zoomable:hover { transform: none; }
   button:enabled:hover, button:enabled:active, .qalam-link:hover, .qalam-link:active, .qalam-link:hover > svg, summary:active { transform: none !important; }
   .workspace-arrival, .workspace-arrival .card, .atmosphere-books, .atmosphere-orbits, .loading-placeholder, .navigation-progress::after { animation: none !important; }
+  [data-ambient] { animation: none !important; }
+  .wordmark:hover .brand-symbol-frame, a:focus-visible .brand-symbol-frame, a[class*="btn-"]:hover, a[class*="btn-"]:active, button:enabled:hover svg { transform: none !important; }
 }

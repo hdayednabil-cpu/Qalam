@@ -8,14 +8,17 @@ import { t } from "@/lib/i18n";
 import { logout, clearViewAs } from "@/app/login/actions";
 import type { Role } from "@/db/schema";
 import { WorkspaceAtmosphere } from "./workspace-atmosphere";
+import { AmbientArt, MotionToggle } from "./ambient-motion";
 
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
-    <span className={`display inline-flex items-center gap-2.5 text-[25px] font-bold tracking-[-0.06em] ${className}`}>
+    <span className={`wordmark display inline-flex items-center gap-2.5 text-[25px] font-bold tracking-[-0.06em] ${className}`}>
+      <span className="brand-symbol-frame"><AmbientArt inline className="brand-symbol">
       <svg width="32" height="36" viewBox="0 0 32 36" fill="none" aria-hidden="true">
         <path d="M24 5H14C7.4 5 3 9.5 3 16s4.4 11 11 11h10V5Z" stroke="currentColor" strokeWidth="3.5" />
         <path d="m15 17 9 15M15 17h9" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
       </svg>
+      </AmbientArt></span>
       {t("app.name").toLowerCase()}<span className="text-ink-400">.</span>
     </span>
   );
@@ -46,6 +49,7 @@ export function AppShell({ children, items, user, viewingAs, role, unread = 0 }:
           <div className="hidden md:block"><WorkspaceHeading items={items} /></div>
           <div className="flex items-center gap-3">
             <span className="hidden text-xs text-mute sm:block">A little progress, every day.</span>
+            <div className="hidden sm:block"><MotionToggle /></div>
             <Link href="/account" aria-label="Account settings" className="flex min-h-11 min-w-11 items-center justify-center rounded-xl"><Avatar name={user.displayName} hue={user.hue ?? 220} size={32} /></Link>
             <form action={logout} className="md:hidden"><PendingButton pendingLabel="Signing out…" iconOnly type="submit" aria-label={t("nav.signOut")} className="rounded-lg p-2 text-mute hover:bg-ink-50"><LogOut size={17} /></PendingButton></form>
           </div>

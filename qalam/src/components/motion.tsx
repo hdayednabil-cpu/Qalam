@@ -136,7 +136,7 @@ export function MotionProgress({ value, tone = "brand", className, label }: { va
         </div>
       )}
       <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-        <motion.div className={`h-full rounded-full ${TONE_BAR[tone]}`} initial={reduced ? false : { width: 0 }} animate={{ width: (inView || reduced) ? `${clamped}%` : 0 }} transition={{ duration: reduced ? 0 : 0.6, ease: EASE }} />
+        <motion.div className={`h-full w-full origin-left rounded-full ${TONE_BAR[tone]}`} initial={reduced ? false : { scaleX: 0 }} animate={{ scaleX: (inView || reduced) ? clamped / 100 : 0 }} transition={{ duration: reduced ? 0 : 0.6, ease: EASE }} />
       </div>
     </div>
   );

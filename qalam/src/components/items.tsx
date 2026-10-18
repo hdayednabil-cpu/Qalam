@@ -46,7 +46,7 @@ export function SessionRow({ s, href, showStudents = true, compact = false, audi
     </div>
   );
   return href ? (
-    <Link href={href} className="block rounded-xl -mx-2 px-2 hover:bg-ink-50/60">
+    <Link href={href} className="interactive-row block rounded-xl -mx-2 px-2 hover:bg-ink-50/60">
       {inner}
     </Link>
   ) : (
@@ -58,7 +58,7 @@ export function HomeworkRow({ h, href, studentName }: { h: HomeworkView; href: s
   const dueIn = daysUntil(toDateKey(h.dueAt));
   const open = ["assigned", "in_progress", "corrections_requested", "overdue"].includes(h.effectiveStatus);
   return (
-    <Link href={href} className="flex items-start gap-3 rounded-xl -mx-2 px-2 py-4 hover:bg-ink-50/60">
+    <Link href={href} className="interactive-row flex items-start gap-3 rounded-xl -mx-2 px-2 py-4 hover:bg-ink-50/60">
       <div className={cx("mt-0.5 size-8 shrink-0 rounded-lg grid place-items-center", h.effectiveStatus === "overdue" ? "bg-coral-100 text-coral-600" : h.effectiveStatus === "completed" ? "bg-moss-100 text-moss-600" : h.effectiveStatus === "submitted" || h.effectiveStatus === "resubmitted" ? "bg-saffron-100 text-saffron-600" : "bg-ink-50 text-ink-600")}>
         {h.effectiveStatus === "completed" ? <CheckCircle2 size={16} /> : h.priority === "high" ? <Flame size={16} /> : <Circle size={16} />}
       </div>
@@ -110,7 +110,7 @@ export function TestRow({ a, href, studentName }: { a: AssessmentView; href?: st
     </div>
   );
   return href ? (
-    <Link href={href} className="block rounded-xl -mx-2 px-2 hover:bg-ink-50/60">
+    <Link href={href} className="interactive-row block rounded-xl -mx-2 px-2 hover:bg-ink-50/60">
       {body}
     </Link>
   ) : (

@@ -87,3 +87,15 @@ Browser verification limitation: the prior automation attempt was rejected by th
 Recommendation remains to keep PR #2 in draft until the owner has reviewed the refreshed preview and authenticated/mobile appearance is verified. No production release or merge is authorized by this work.
 
 The broader student-first AI product proposal, competitor findings, preliminary token-cost scenarios and required pilot inputs are in `docs/ai-first-product-plan.md`. Those are proposals, not implemented capabilities.
+
+## October 18: smooth interaction and slim roster pass
+
+Owner requested more distinct hover motion/colour, smoothness and responsiveness, plus continuous logo motion.
+
+- Hover states now distinguish actionable buttons, navigation, task rows and student cards with short lift/shift, violet colour changes, clearer borders and restrained depth. Press feedback completes quickly (70 ms transition); navigation is never deliberately delayed for animation. Keyboard focus retains a clear ring and edge cue. Touch devices do not receive the new mouse-hover effects.
+- The wordmark and learning constellation now drift continuously using CSS transforms. A small IntersectionObserver pauses each decorative animation offscreen. Hidden browser tabs pause them too. A shared pause/resume control persists its preference; device reduced-motion settings take priority. Mobile exposes the control inside More navigation to preserve header space.
+- Animated progress fills use scale transforms instead of changing width. No new animation library, frame-by-frame pointer listener or video background was added.
+- Student rosters now fetch dedicated summaries instead of full workspaces. Six ancillary query branches per student are omitted (guardians, schedules, subjects, next steps, feedback and resources). Homework selects status and due date without submissions/pages. Assessments omit results and notes. Access checks, alerts, packages, next sessions and sorting are preserved; there is no cross-request user-data cache.
+- Added four regression cases proving summary equivalence for tutor, guardian and student roles and checking omitted queries/payloads. The full suite now passes 60 tests across nine files.
+
+Live latency and animation frame rates have not been measured. The previously rejected browser automation remains blocked; authenticated/mobile visual assessment of this revision is still pending. No production deployment or merge is part of this pass.

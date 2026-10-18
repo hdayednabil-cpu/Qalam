@@ -114,6 +114,40 @@ export function studentName(st: { firstName: string; preferredName?: string | nu
   return st.preferredName ?? st.firstName;
 }
 
+function loadEnrolmentRows(db: DB, studentId: string) {
+  return db.query.enrolments.findMany({
+    where: eq(s.enrolments.studentId, studentId),
+    with: { template: { with: { subject: true } }, topics: { with: { topic: true, section: true }, orderBy: [asc(s.enrolmentTopics.sortOrder)] } },
+  });
+}
+
+function enrolmentViews(enrolRows: Awaited<ReturnType<typeof loadEnrolmentRows>>, masteryRows: (typeof s.topicMastery.$inferSelect)[]): EnrolmentView[] {
+  const mastery = new Map(masteryRows.map((m) => [m.enrolmentTopicId, m.level]));
+  const enrolments: EnrolmentView[] = enrolRows.map((e) => {
+    const topics: TopicView[] = e.topics.map((et) => ({
+      id: et.id,
+      name: topicName(et),
+      code: et.topic?.code ?? null,
+      sectionName: et.section?.name ?? null,
+      inScope: et.inScope,
+      isCurrent: et.isCurrent,
+      mastery: mastery.get(et.id) ?? null,
+      sortOrder: et.sortOrder,
+    }));
+    return {
+      id: e.id,
+      templateName: e.template.name,
+      subject: e.template.subject.name,
+      subjectColour: e.template.subject.colour,
+      label: e.label ?? e.template.name,
+      topics,
+      coverage: computeCoverage(topics),
+      currentTopic: topics.find((x) => x.isCurrent) ?? null,
+    };
+  });
+  return enrolments;
+}
+
 export async function getWorkspace(db: DB, user: CurrentUser, studentId: string): Promise<Workspace> {
   await assertStudentAccess(db, user, studentId);
   const student = await db.query.students.findFirst({ where: eq(s.students.id, studentId) });
@@ -124,10 +158,7 @@ export async function getWorkspace(db: DB, user: CurrentUser, studentId: string)
   const [family, links, enrolRows, masteryRows, studentSessions, schedules, pkg, hwRows, asRows, subjects, nextSteps, fbRows, resources] = await Promise.all([
     db.query.families.findFirst({ where: eq(s.families.id, student.familyId) }),
     db.query.familyGuardians.findMany({ where: eq(s.familyGuardians.familyId, student.familyId), with: { guardian: true } }),
-    db.query.enrolments.findMany({
-      where: eq(s.enrolments.studentId, studentId),
-      with: { template: { with: { subject: true } }, topics: { with: { topic: true, section: true }, orderBy: [asc(s.enrolmentTopics.sortOrder)] } },
-    }),
+    loadEnrolmentRows(db, studentId),
     db.query.topicMastery.findMany({ where: eq(s.topicMastery.studentId, studentId) }),
     loadStudentSessions(db, user, studentId),
     db.query.schedules.findMany({ where: and(eq(s.schedules.studentId, studentId), eq(s.schedules.active, true)) }),
@@ -152,29 +183,7 @@ export async function getWorkspace(db: DB, user: CurrentUser, studentId: string)
   ]);
   if (!family) throw new Error("Family not found");
   const guardians = links.map((l) => l.guardian);
-  const mastery = new Map(masteryRows.map((m) => [m.enrolmentTopicId, m.level]));
-  const enrolments: EnrolmentView[] = enrolRows.map((e) => {
-    const topics: TopicView[] = e.topics.map((et) => ({
-      id: et.id,
-      name: topicName(et),
-      code: et.topic?.code ?? null,
-      sectionName: et.section?.name ?? null,
-      inScope: et.inScope,
-      isCurrent: et.isCurrent,
-      mastery: mastery.get(et.id) ?? null,
-      sortOrder: et.sortOrder,
-    }));
-    return {
-      id: e.id,
-      templateName: e.template.name,
-      subject: e.template.subject.name,
-      subjectColour: e.template.subject.colour,
-      label: e.label ?? e.template.name,
-      topics,
-      coverage: computeCoverage(topics),
-      currentTopic: topics.find((x) => x.isCurrent) ?? null,
-    };
-  });
+  const enrolments = enrolmentViews(enrolRows, masteryRows);
   const allTopics = enrolments.flatMap((e) => e.topics);
   const topicById = new Map(allTopics.map((x) => [x.id, x]));
 
@@ -294,7 +303,12 @@ async function loadStudentPackage(db: DB, student: typeof s.students.$inferSelec
 }
 
 /** Rule-based, deterministic intelligence. Every alert is explainable. */
-export function computeAlerts(ws: Workspace): Alert[] {
+type AlertSource = Pick<Workspace, "sessions" | "allTopics" | "pkg"> & {
+  assessments: Pick<AssessmentView, "id" | "name" | "daysUntil" | "revision">[];
+  homework: Pick<HomeworkView, "status" | "dueAt" | "effectiveStatus">[];
+};
+
+export function computeAlerts(ws: AlertSource): Alert[] {
   const alerts: Alert[] = [];
   for (const a of ws.assessments) {
     if (a.daysUntil >= 0 && a.daysUntil <= 21 && a.revision.unrevised > 0)
@@ -419,7 +433,11 @@ async function accessibleWorkspaces(db: DB, user: CurrentUser): Promise<Workspac
   return workspaces;
 }
 
-function summarizeStudent(ws: Workspace): StudentSummary {
+type StudentOverview = Pick<Workspace, "student" | "displayName" | "enrolments" | "allTopics" | "pkg" | "alerts" | "nextSession"> & {
+  family: Pick<Workspace["family"], "name">;
+};
+
+function summarizeStudent(ws: StudentOverview): StudentSummary {
   return {
     id: ws.student.id,
     name: ws.displayName,
@@ -439,8 +457,51 @@ function summarizeStudent(ws: Workspace): StudentSummary {
   };
 }
 
+/** Roster cards need learning signals, not submissions, files or conversations. */
+async function loadStudentSummary(db: DB, user: CurrentUser, studentId: string): Promise<StudentSummary> {
+  await assertStudentAccess(db, user, studentId);
+  const student = await db.query.students.findFirst({ where: eq(s.students.id, studentId) });
+  if (!student) throw new Error("Student not found");
+  const [family, enrolRows, masteryRows, studentSessions, pkg, homeworkRows, assessmentRows] = await Promise.all([
+    db.query.families.findFirst({ where: eq(s.families.id, student.familyId), columns: { name: true } }),
+    loadEnrolmentRows(db, studentId),
+    db.query.topicMastery.findMany({ where: eq(s.topicMastery.studentId, studentId) }),
+    loadStudentSessions(db, user, studentId),
+    loadStudentPackage(db, student),
+    db.query.homework.findMany({ where: eq(s.homework.studentId, studentId), columns: { status: true, dueAt: true } }),
+    db.query.assessments.findMany({
+      where: eq(s.assessments.studentId, studentId),
+      columns: { id: true, name: true, date: true },
+      with: { topics: { columns: { enrolmentTopicId: true, revisionStatus: true } } },
+    }),
+  ]);
+  if (!family) throw new Error("Family not found");
+  const enrolments = enrolmentViews(enrolRows, masteryRows);
+  const allTopics = enrolments.flatMap((enrolment) => enrolment.topics);
+  const topicById = new Map(allTopics.map((topic) => [topic.id, topic]));
+  const sessions = studentSessions.sort((a, b) => b.startsAt.getTime() - a.startsAt.getTime());
+  const now = Date.now();
+  const nextSession = sessions.filter((session) => session.status === "scheduled" && session.endsAt.getTime() >= now).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())[0] ?? null;
+  const homework = homeworkRows.map((row) => ({ ...row, effectiveStatus: effectiveHomeworkStatus(row.status, row.dueAt) }));
+  const assessments = assessmentRows.map((assessment) => ({
+    id: assessment.id,
+    name: assessment.name,
+    daysUntil: daysUntil(assessment.date),
+    revision: revisionProgress(assessment.topics.map((topic) => deriveRevision(topic.revisionStatus, topicById.get(topic.enrolmentTopicId)?.mastery ?? null))),
+  })).sort((a, b) => (a.daysUntil >= 0 && b.daysUntil >= 0 ? a.daysUntil - b.daysUntil : b.daysUntil - a.daysUntil));
+  return summarizeStudent({
+    student, displayName: studentName(student), family, enrolments, allTopics, pkg, nextSession,
+    alerts: computeAlerts({ sessions, allTopics, pkg, homework, assessments }),
+  });
+}
+
 export async function listStudents(db: DB, user: CurrentUser): Promise<StudentSummary[]> {
-  return (await accessibleWorkspaces(db, user)).map(summarizeStudent).sort((a, b) => a.name.localeCompare(b.name));
+  const ids = await accessibleStudentIds(db, user);
+  const summaries: StudentSummary[] = [];
+  for (let offset = 0; offset < ids.length; offset += 2) {
+    summaries.push(...await Promise.all(ids.slice(offset, offset + 2).map((id) => loadStudentSummary(db, user, id))));
+  }
+  return summaries.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function getTutorDashboard(db: DB, user: CurrentUser) {

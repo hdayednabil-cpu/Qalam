@@ -1,12 +1,13 @@
 import { useId, type ReactNode } from "react";
 import Link from "@/components/app-link";
 import { ArrowUpRight } from "lucide-react";
+import { AmbientArt } from "./ambient-motion";
 
 /** Qalam's learning constellation: decorative, lightweight and independent of student data. */
 export function LearningOrbit({ className = "" }: { className?: string }) {
   const id = useId().replace(/:/g, "");
   return (
-    <div aria-hidden="true" className={`learning-orbit ${className}`}>
+    <AmbientArt className={`learning-orbit ${className}`}>
       <svg viewBox="0 0 400 400" fill="none" className="h-full w-full">
         <defs>
           <linearGradient id={`${id}-orbit`} x1="70" y1="50" x2="330" y2="350" gradientUnits="userSpaceOnUse"><stop stopColor="#80F8DF" /><stop offset=".5" stopColor="#8CA4FF" /><stop offset="1" stopColor="#C5A2FF" /></linearGradient>
@@ -23,7 +24,7 @@ export function LearningOrbit({ className = "" }: { className?: string }) {
         <path d="m110 91 4 9 9 4-9 4-4 9-4-9-9-4 9-4Z" fill="#80F8DF" />
         <path d="m284 310 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" fill="#D4BAFF" />
       </svg>
-    </div>
+    </AmbientArt>
   );
 }
 

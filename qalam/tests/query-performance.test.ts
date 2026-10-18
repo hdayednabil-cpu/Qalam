@@ -6,6 +6,7 @@ import * as s from "@/db/schema";
 import type { CurrentUser } from "@/lib/auth";
 import { getTutorDashboard, getWorkspace, listStudents, searchAll, sessionsBetween } from "@/lib/queries";
 import { createSession, logSession } from "@/lib/mutations";
+import { computeCoverage } from "@/lib/domain";
 import { todayKey, addDaysKey } from "@/lib/dates";
 import { newId } from "@/lib/ids";
 
@@ -25,6 +26,52 @@ afterEach(() => vi.restoreAllMocks());
 afterAll(() => vi.unstubAllEnvs());
 
 describe("workspace query performance without stale or overbroad results", () => {
+  it.each(["tutor", "guardian", "student"] as const)("keeps slim roster summaries equivalent to full workspaces for %s", async (role) => {
+    const userRow = (await db.query.users.findFirst({ where: eq(s.users.role, role) }))!;
+    const student = await db.query.students.findFirst({ where: eq(s.students.userId, userRow.id) });
+    const guardian = await db.query.guardians.findFirst({ where: eq(s.guardians.userId, userRow.id) });
+    const links = guardian ? await db.query.familyGuardians.findMany({ where: eq(s.familyGuardians.guardianId, guardian.id) }) : [];
+    const user: CurrentUser = { id: userRow.id, tutorId: userRow.tutorId, role, displayName: userRow.displayName, email: userRow.email, username: userRow.username, studentId: student?.id, guardianId: guardian?.id, familyIds: student ? [student.familyId] : links.map((link) => link.familyId) };
+    const summaries = await listStudents(db, user);
+    expect(summaries.length).toBeGreaterThan(0);
+    for (const summary of summaries) {
+      const ws = await getWorkspace(db, user, summary.id);
+      expect(summary).toEqual({
+        id: ws.student.id, name: ws.displayName, fullName: `${ws.student.firstName} ${ws.student.lastName}`,
+        gradeYear: ws.student.gradeYear, school: ws.student.school, status: ws.student.status, hue: ws.student.avatarHue,
+        familyName: ws.family.name, enrolments: ws.enrolments.map((enrolment) => enrolment.subject),
+        coverage: computeCoverage(ws.allTopics).percent, pkg: ws.pkg, alerts: ws.alerts, nextSession: ws.nextSession,
+        currentTopic: ws.enrolments.map((enrolment) => enrolment.currentTopic?.name).find(Boolean) ?? null,
+        startDate: ws.student.startDate,
+      });
+      if (role !== "tutor" && summary.nextSession) {
+        expect(summary.nextSession.privateNotes).toBeNull();
+        expect(summary.nextSession.students.map((pupil) => pupil.id)).toEqual([summary.id]);
+      }
+    }
+  });
+
+  it("does not load conversations, files or ancillary workspace data for roster cards", async () => {
+    const omittedReads = [
+      vi.spyOn(db.query.familyGuardians, "findMany"), vi.spyOn(db.query.schedules, "findMany"),
+      vi.spyOn(db.query.subjects, "findMany"), vi.spyOn(db.query.nextSteps, "findMany"),
+      vi.spyOn(db.query.feedback, "findMany"), vi.spyOn(db.query.resources, "findMany"),
+    ];
+    const homeworkReads = vi.spyOn(db.query.homework, "findMany");
+    const assessmentReads = vi.spyOn(db.query.assessments, "findMany");
+    await listStudents(db, tutor);
+    for (const read of omittedReads) expect(read).not.toHaveBeenCalled();
+    expect(homeworkReads).toHaveBeenCalledTimes(studentIds.length);
+    for (const [query] of homeworkReads.mock.calls) {
+      expect(query?.columns).toEqual({ status: true, dueAt: true });
+      expect(query?.with).toBeUndefined();
+    }
+    for (const [query] of assessmentReads.mock.calls) {
+      expect(query?.columns).toEqual({ id: true, name: true, date: true });
+      expect(query?.with).toEqual({ topics: { columns: { enrolmentTopicId: true, revisionStatus: true } } });
+    }
+  });
+
   it("searches each authorised workspace once, preserving sorted student results", async () => {
     const expected = await listStudents(db, tutor);
     const homeworkReads = vi.spyOn(db.query.homework, "findMany");
@@ -73,6 +120,7 @@ describe("workspace query performance without stale or overbroad results", () =>
     const outsider: CurrentUser = { ...tutor, tutorId: "another-tutor" };
     await expect(getWorkspace(db, outsider, studentIds[0])).rejects.toThrow("Forbidden");
     expect(homeworkReads).not.toHaveBeenCalled();
+    expect(await listStudents(db, outsider)).toEqual([]);
     expect(await searchAll(db, outsider, "a")).toEqual({ students: [], topics: [], homework: [], tests: [], resources: [] });
   });
 });
