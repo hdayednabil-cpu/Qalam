@@ -26,7 +26,7 @@ export function AmbientVideo({ artwork, className = "" }: { artwork: "welcome" |
       if (!ready) return;
       if (!video.hasAttribute("src")) {
         const mobile = window.matchMedia("(max-width: 767px)").matches;
-        video.src = `/media/qalam/${artwork}${mobile ? "-mobile" : ""}.v1.mp4`;
+        video.src = `/media/qalam/${artwork}${mobile ? "-mobile" : ""}.v2.mp4`;
       }
       void video.play().catch(() => { /* Autoplay restrictions keep the poster visible. */ });
     };
@@ -65,7 +65,7 @@ export function AmbientVideo({ artwork, className = "" }: { artwork: "welcome" |
     };
   }, [artwork]);
 
-  return <div className={`ambient-video ${className}`} aria-hidden="true" style={{ backgroundImage: `url(/media/qalam/${artwork}.v1.webp)` }}>
+  return <div className={`ambient-video ambient-video-${artwork} ${className}`} aria-hidden="true">
     <video ref={ref} muted loop playsInline preload="none" disablePictureInPicture disableRemotePlayback tabIndex={-1}
       onPlaying={(event) => { event.currentTarget.dataset.playing = "true"; }}
       onError={(event) => { delete event.currentTarget.dataset.playing; }} />

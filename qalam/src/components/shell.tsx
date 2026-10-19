@@ -27,7 +27,8 @@ export function Wordmark({ className = "" }: { className?: string }) {
 export function AppShell({ children, items, user, viewingAs, role, unread = 0 }: { children: ReactNode; items: NavItem[]; user: { displayName: string; hue?: number }; viewingAs?: { label: string; role: "guardian" | "student" }; role: Role; unread?: number }) {
   const withBadge = items.map((it) => (it.icon === "inbox" ? { ...it, badge: unread } : it));
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[244px_minmax(0,1fr)]">
+    <div className="relative isolate min-h-dvh md:grid md:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[244px_minmax(0,1fr)]">
+      <WorkspaceAtmosphere />
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-xl focus:bg-white focus:px-4 focus:py-3">Skip to content</a>
       <aside className="hidden md:sticky md:top-0 md:flex md:h-dvh md:overflow-y-auto md:flex-col sidebar-surface bg-ink-950 px-4 py-7 text-white">
         <Link href={items[0].href} className="mb-10 px-4 w-fit"><Wordmark /></Link>
@@ -43,7 +44,6 @@ export function AppShell({ children, items, user, viewingAs, role, unread = 0 }:
         </div>
       </aside>
       <div className="workspace-surface relative isolate min-w-0 flex flex-col">
-        <WorkspaceAtmosphere />
         <header className="sticky top-0 z-20 flex min-h-[68px] items-center justify-between gap-3 border-b border-line bg-white/90 backdrop-blur-xl px-5 md:px-8 xl:px-10">
           <Link href={items[0].href} className="md:hidden"><Wordmark /></Link>
           <div className="hidden md:block"><WorkspaceHeading items={items} /></div>

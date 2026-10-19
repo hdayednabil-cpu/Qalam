@@ -83,15 +83,18 @@ body { background: radial-gradient(ellipse at 95% 0%, #e9e5ff80, transparent 45%
 
 /* Approved Qalam films: real posters first, no media request until after load. */
 .ambient-video { position: absolute; pointer-events: none; overflow: hidden; background-size: cover; background-position: center; }
+.ambient-video-welcome { background-image: url('/media/qalam/welcome.v2.webp'); }
+.ambient-video-outlines { background-image: url('/media/qalam/outlines.v2.webp'); }
 .ambient-video video { width: 100%; height: 100%; object-fit: cover; object-position: inherit; opacity: 0; transition: opacity .45s ease; }
 .ambient-video video[data-playing="true"] { opacity: 1; }
 .welcome-film { inset: 0; background-position: 64% center; object-position: 64% center; }
 .welcome-film-shade { position: absolute; pointer-events: none; inset: 0; background: linear-gradient(180deg, #07112b25 20%, #07112b70 50%, #07112bf2 100%); }
-.workspace-film { top: 0; right: 0; width: min(100%, 1000px); aspect-ratio: 3 / 4; filter: invert(1) hue-rotate(180deg) saturate(.65); opacity: .55; mask-image: linear-gradient(#000 60%, transparent 100%); }
+.workspace-film { inset: 0; width: 100%; height: 100%; opacity: .55; }
 @media (max-width: 767px) {
   .welcome-film { background-position: 70% 43%; object-position: 70% 43%; }
   .welcome-film-shade { background: linear-gradient(90deg, #07112be0, #07112b35); }
-  .workspace-film { width: 100%; opacity: .45; }
+  .ambient-video-outlines { background-image: url('/media/qalam/outlines-mobile.v2.webp'); }
+  .workspace-film { opacity: .45; }
 }
 @media (prefers-reduced-motion: reduce) { .ambient-video video { visibility: hidden; transition: none; } }
 
@@ -162,7 +165,7 @@ button[aria-busy="true"] { cursor: progress; }
 .workspace-arrival > .space-y-5 > .card, .workspace-arrival > .space-y-6 > .card { animation: workspace-arrive .3s cubic-bezier(.16,1,.3,1) both; }
 .workspace-arrival > .space-y-5 > .card:nth-child(3), .workspace-arrival > .space-y-6 > .card:nth-child(3) { animation-delay: .04s; }
 .workspace-arrival > .space-y-5 > .card:nth-child(4), .workspace-arrival > .space-y-6 > .card:nth-child(4) { animation-delay: .08s; }
-.workspace-atmosphere { position: absolute; z-index: -1; inset: 0; overflow: hidden; pointer-events: none; background: radial-gradient(ellipse 65% 560px at 100% 0, #d7ccff65, transparent), radial-gradient(ellipse 65% 640px at 0 80%, #b7eade50, transparent); }
+.workspace-atmosphere { position: fixed; z-index: -1; inset: 0; overflow: hidden; pointer-events: none; background: radial-gradient(ellipse 65% 560px at 100% 0, #d7ccff65, transparent), radial-gradient(ellipse 65% 640px at 0 80%, #b7eade50, transparent); }
 .workspace-atmosphere::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(#7c78b8 0.7px, transparent .7px); background-size: 24px 24px; opacity: .10; mask-image: linear-gradient(#000, transparent 850px); }
 .atmosphere-books { position: absolute; width: clamp(240px, 35vw, 460px); top: 110px; right: -75px; color: #7862ba; opacity: .15; animation: illustration-arrive 1.1s ease-out both; }
 .atmosphere-orbits { position: absolute; width: clamp(240px, 32vw, 430px); top: 660px; left: -100px; color: #398e8a; opacity: .13; animation: illustration-arrive 1.4s ease-out both; }
