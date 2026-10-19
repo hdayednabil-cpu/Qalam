@@ -1,9 +1,10 @@
-import Link from "next/link";
+import { JourneyHero } from "@/components/learning-orbit";
+import Link from "@/components/app-link";
 import { canSee } from "@/lib/access";
 import { strengths, weaknesses } from "@/lib/domain";
 import { t } from "@/lib/i18n";
 import { formatDayShort, formatTime, formatMonthYear, todayKey, relativeDays } from "@/lib/dates";
-import { Card, EmptyState, Stat, cx } from "@/components/ui";
+import { Card, EmptyState, Stat, cx, PageHeader } from "@/components/ui";
 import { HomeworkRow, RevisionRow, SessionRow, TopicChips } from "@/components/items";
 import { Reveal, Stagger, StaggerItem, MotionRing, MotionProgress } from "@/components/motion";
 import { currentChild } from "./child";
@@ -22,20 +23,19 @@ export default async function ParentHome() {
   return (
     <div className="space-y-6">
       <ChildSwitcher kids={kids} currentId={child.id} back="/parent" />
-      <div className="fade-up">
-        <h1 className="text-2xl md:text-3xl font-semibold">{t("parent.question", { name })}</h1>
-        <p className="text-mute">{ws.student.gradeYear} · {ws.student.school} · {ws.enrolments.map((e) => e.subject).join(", ")}</p>
-      </div>
-
+      <PageHeader eyebrow="The bigger picture" title={t("parent.question", { name })} subtitle={[ws.student.gradeYear, ws.student.school, ws.enrolments.map((e) => e.subject).join(", ")].filter(Boolean).join(" · ")} />
+      <JourneyHero eyebrow="Together, every step" title={open.length ? `${name} has ${open.length} task${open.length === 1 ? "" : "s"} to work on.` : waiting.length ? "The work is in. Feedback comes next." : "A clearer picture of their progress."} href={open.length || waiting.length ? "/parent/homework" : "/parent/sessions"} action={open.length || waiting.length ? "See homework and feedback" : "View upcoming lessons"}>
+        {open.some((h) => h.effectiveStatus === "corrections_requested") ? "Your tutor has left corrections to help turn practice into understanding." : "Follow the next lesson, see what’s improving, and support the next small step."}
+      </JourneyHero>
       <Stagger className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StaggerItem><Stat label={`${t("parent.monthOverview")} · ${monthLabel}`} value={ws.stats.sessionsThisMonth} hint={`${t("common.sessions").toLowerCase()} ${t("parent.completed")} · ${ws.stats.upcomingThisMonth} ${t("parent.upcoming")}`} /></StaggerItem>
         <StaggerItem><Stat label={t("parent.package")} value={ws.pkg ? ws.pkg.remaining : "—"} hint={ws.pkg ? `${t("common.of")} ${ws.pkg.total} ${t("common.remaining")}${ws.pkg.shared ? " (family)" : ""}` : "No active package"} tone={ws.pkg?.low ? "warn" : undefined} /></StaggerItem>
-        <StaggerItem><Stat label={t("parent.homework")} value={`${ws.homework.filter((h) => h.status === "completed").length}/${ws.homework.length}`} hint={`${open.length} ${t("parent.pending")} · ${waiting.length} awaiting review`} tone={open.some((h) => h.effectiveStatus === "overdue") ? "danger" : undefined} /></StaggerItem>
-        <StaggerItem><Stat label="Attendance" value={ws.stats.attendance !== null ? `${ws.stats.attendance}%` : "—"} hint="completed vs no-show" /></StaggerItem>
+        <StaggerItem><Stat label={t("parent.homework")} value={ws.homework.length ? `${ws.homework.filter((h) => h.status === "completed").length}/${ws.homework.length}` : "None yet"} hint={`${open.length} ${t("parent.pending")} · ${waiting.length} awaiting review`} tone={open.some((h) => h.effectiveStatus === "overdue") ? "danger" : undefined} /></StaggerItem>
+        <StaggerItem><Stat label="Attendance" value={ws.stats.attendance !== null ? `${ws.stats.attendance}%` : "—"} hint={ws.stats.attendance === null ? "Available after the first session" : "completed vs no-show"} /></StaggerItem>
       </Stagger>
 
-      <Reveal className="grid gap-4 md:grid-cols-2">
-        <Card title={t("parent.upcomingTest")}>
+      <Reveal className={nextTest ? "grid items-start gap-4 md:grid-cols-2" : "grid gap-4"}>
+        {nextTest && <Card title={t("parent.upcomingTest")}>
           {nextTest ? (
             <div>
               <div className="flex items-center gap-4">
@@ -52,10 +52,10 @@ export default async function ParentHome() {
           ) : (
             <EmptyState>{t("empty.noTests")}</EmptyState>
           )}
-        </Card>
-        <div className="space-y-4">
+        </Card>}
+        <div className={nextTest ? "space-y-4" : "grid items-start gap-4 md:grid-cols-2"}>
           <Card title={t("parent.nextSession")}>
-            {ws.nextSession ? <SessionRow s={ws.nextSession} showStudents={false} compact /> : <EmptyState>{t("empty.noSessions")}</EmptyState>}
+            {ws.nextSession ? <SessionRow s={ws.nextSession} showStudents={false} audience="family" compact /> : <EmptyState>{t("empty.noSessions")}</EmptyState>}
             {ws.lastLogged && (
               <div className="mt-3 border-t border-line/70 pt-3 text-sm">
                 <div className="text-xs text-mute">Last session · {formatDayShort(ws.lastLogged.startsAt)} {formatTime(ws.lastLogged.startsAt)}</div>
@@ -64,11 +64,12 @@ export default async function ParentHome() {
             )}
           </Card>
           <Card title={t("parent.performance")}>
+            {!ws.enrolments.length && <p className="text-sm leading-relaxed text-mute">Your tutor is setting up the learning plan. Subjects, strengths and areas to practise will appear here as lessons begin.</p>}
             {ws.enrolments.map((e) => <MotionProgress key={e.id} value={e.coverage.percent} label={`${e.subject} — ${t("tutor.coverage").toLowerCase()}`} className="mb-3" />)}
-            <div className="grid gap-3 sm:grid-cols-2 mt-2">
+            {ws.enrolments.length > 0 && <div className="grid gap-3 sm:grid-cols-2 mt-2">
               <div><div className="label mb-1">{t("parent.strengths")}</div><TopicChips topics={strengths(ws.allTopics)} empty="—" /></div>
               <div><div className="label mb-1">{t("parent.improve")}</div><TopicChips topics={weaknesses(ws.allTopics)} empty="—" /></div>
-            </div>
+            </div>}
           </Card>
         </div>
       </Reveal>

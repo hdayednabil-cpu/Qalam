@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Images, Trash2, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 import { submitHomeworkAction } from "../../actions";
@@ -16,23 +16,26 @@ async function shrink(blob: Blob): Promise<Blob> {
   try {
     const bmp = await createImageBitmap(blob);
     const scale = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
-    if (scale === 1 && blob.size < 2_000_000) return blob;
+    if (scale === 1 && blob.size < 2_000_000) { bmp.close(); return blob; }
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(bmp.width * scale);
     canvas.height = Math.round(bmp.height * scale);
     canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    bmp.close();
     return await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("toBlob"))), "image/jpeg", 0.85));
   } catch {
     return blob;
   }
 }
 
-export function SubmitWork({ homeworkId, resubmit, labels }: { homeworkId: string; resubmit: boolean; labels: Record<string, string> }) {
+export function SubmitWork({ homeworkId, resubmit, labels, requirement = "photos" }: { homeworkId: string; resubmit: boolean; labels: Record<string, string>; requirement?: "photos" | "typed" | "none" }) {
   const [pages, setPages] = useState<Page[]>([]);
   const [comment, setComment] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const router = useRouter();
+  const previewUrls = useRef(new Set<string>());
+  useEffect(() => { const urls = previewUrls.current; return () => { urls.forEach((url) => URL.revokeObjectURL(url)); urls.clear(); }; }, []);
   const adding = useRef(false);
   const pageCount = useRef(0);
   const cam = useRef<HTMLInputElement>(null);
@@ -67,7 +70,9 @@ export function SubmitWork({ homeworkId, resubmit, labels }: { homeworkId: strin
           }
           if (!isPdf) blob = await shrink(blob);
           if (blob.size > MAX_FILE_BYTES) throw new Error(labels.tooLarge);
-          update(key, { preview: isPdf ? null : URL.createObjectURL(blob), status: "uploading" });
+          const preview = isPdf ? null : URL.createObjectURL(blob);
+          if (preview) previewUrls.current.add(preview);
+          update(key, { preview, status: "uploading" });
           const fd = new FormData();
           fd.append("file", blob, isPdf ? file.name : file.name.replace(/\.\w+$/, "") + ".jpg");
           fd.append("homeworkId", homeworkId);
@@ -94,15 +99,19 @@ export function SubmitWork({ homeworkId, resubmit, labels }: { homeworkId: strin
   const ready = pages.filter((p) => p.status === "ready");
   const busy = pages.some((p) => p.status === "converting" || p.status === "uploading");
 
+  const failed = pages.some((p) => p.status === "error");
+  const complete = requirement === "photos" ? ready.length > 0 : requirement === "typed" ? comment.trim().length > 0 : true;
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-mute">{labels.pagesHint}</p>
+      {requirement === "photos" && <><p className="text-sm text-mute">{labels.pagesHint}</p>
       <div className="flex flex-wrap gap-2">
-        <input ref={cam} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => addFiles(e.target.files)} />
-        <input ref={lib} type="file" accept="image/*,.heic,.heif,application/pdf" multiple className="hidden" onChange={(e) => addFiles(e.target.files)} />
-        <button type="button" className="btn-primary" onClick={() => cam.current?.click()}><Camera size={16} /> {labels.takePhoto}</button>
-        <button type="button" className="btn-secondary" onClick={() => lib.current?.click()}><Images size={16} /> {labels.addPage}</button>
+        <input ref={cam} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { void addFiles(e.target.files); e.target.value = ""; }} />
+        <input ref={lib} type="file" accept="image/*,.heic,.heif,application/pdf" multiple className="hidden" onChange={(e) => { void addFiles(e.target.files); e.target.value = ""; }} />
+        <button type="button" className="btn-primary" disabled={pending || busy} onClick={() => cam.current?.click()}><Camera size={16} /> {labels.takePhoto}</button>
+        <button type="button" className="btn-secondary" disabled={pending || busy} onClick={() => lib.current?.click()}><Images size={16} /> {labels.addPage}</button>
       </div>
+      </>}
       {pages.length > 0 && (
         <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {pages.map((p, i) => (
@@ -110,35 +119,42 @@ export function SubmitWork({ homeworkId, resubmit, labels }: { homeworkId: strin
               <div className="aspect-[3/4] bg-stone-100 grid place-items-center relative">
                 {p.preview ? <img src={p.preview} alt={p.name} className="h-full w-full object-cover" /> : <span className="text-xs text-mute px-2 text-center">{p.name}</span>}
                 {(p.status === "converting" || p.status === "uploading") && (
-                  <div className="absolute inset-0 grid place-items-center bg-white/70 text-xs font-medium"><Loader2 className="animate-spin mr-1" size={16} /> {p.status === "converting" ? labels.converting : labels.uploading}</div>
+                  <div role="status" className="absolute inset-0 grid place-items-center bg-white/70 text-xs font-medium"><Loader2 className="animate-spin mr-1" size={16} aria-hidden="true" /> {p.status === "converting" ? labels.converting : labels.uploading}</div>
                 )}
                 {p.status === "error" && <div className="absolute inset-0 grid place-items-center bg-coral-100/90 text-xs text-coral-700 p-2 text-center">{p.error}</div>}
                 <span className="absolute top-1 left-1 rounded-full bg-ink-900/80 text-white text-[11px] px-1.5">{i + 1}</span>
               </div>
               <div className="flex justify-between p-1">
-                <button type="button" className="btn-ghost btn-sm px-2" onClick={() => move(i, -1)} title={labels.moveUp}><ArrowUp size={14} /></button>
-                <button type="button" className="btn-ghost btn-sm px-2" onClick={() => move(i, 1)} title={labels.moveDown}><ArrowDown size={14} /></button>
-                <button type="button" className="btn-ghost btn-sm px-2 text-coral-600" onClick={() => { pageCount.current -= 1; if (p.preview) URL.revokeObjectURL(p.preview); setPages((x) => x.filter((y) => y.key !== p.key)); }} disabled={busy} title={labels.remove}><Trash2 size={14} /></button>
+                <button type="button" className="btn-ghost btn-sm px-2" disabled={i === 0 || pending} onClick={() => move(i, -1)} title={labels.moveUp}><ArrowUp size={14} /></button>
+                <button type="button" className="btn-ghost btn-sm px-2" disabled={i === pages.length - 1 || pending} onClick={() => move(i, 1)} title={labels.moveDown}><ArrowDown size={14} /></button>
+                <button type="button" className="btn-ghost btn-sm px-2 text-coral-600" onClick={() => { pageCount.current -= 1; if (p.preview) { URL.revokeObjectURL(p.preview); previewUrls.current.delete(p.preview); } setPages((x) => x.filter((y) => y.key !== p.key)); }} disabled={busy || pending} title={labels.remove}><Trash2 size={14} /></button>
               </div>
             </li>
           ))}
         </ol>
       )}
-      <textarea value={comment} onChange={(e) => setComment(e.target.value)} className="input min-h-20" placeholder={labels.commentPlaceholder} />
-      {error && <p className="rounded-xl bg-coral-100 px-3 py-2 text-sm text-coral-700">{error}</p>}
+      <label className="block"><span className="label mb-2 block">{requirement === "typed" ? "Your answer" : "Note for your tutor (optional)"}</span><textarea disabled={pending} value={comment} onChange={(e) => setComment(e.target.value)} className="input min-h-20" placeholder={requirement === "typed" ? "Write your answer here…" : labels.commentPlaceholder} /></label>
+      {failed && <p role="alert" className="text-sm text-coral-700">Remove unsuccessful uploads and add them again before submitting.</p>}
+      {error && <p role="alert" className="rounded-xl bg-coral-100 px-3 py-2 text-sm text-coral-700">{error}</p>}
       <button
         type="button"
         className="btn-accent w-full sm:w-auto"
-        disabled={!ready.length || busy || pending}
+        disabled={!complete || failed || busy || pending}
+        aria-busy={pending}
         onClick={() =>
           start(async () => {
-            const r = await submitHomeworkAction(homeworkId, ready.map((p) => p.fileId!), comment);
-            if (!r.ok) setError(r.error);
-            else router.refresh();
+            setError(null);
+            try {
+              const r = await submitHomeworkAction(homeworkId, ready.map((p) => p.fileId!), comment);
+              if (!r.ok) setError(r.error);
+              else router.refresh();
+            } catch {
+              setError("We couldn’t confirm your submission. Your work is still here. Check your connection and try again.");
+            }
           })
         }
       >
-        {pending ? <Loader2 className="animate-spin" size={16} /> : null} {resubmit ? labels.resubmit : labels.submitWork} {ready.length ? `(${ready.length})` : ""}
+        {pending ? <><Loader2 className="animate-spin" size={16} aria-hidden="true" /><span role="status">Submitting your work…</span></> : <>{resubmit ? labels.resubmit : labels.submitWork} {ready.length ? `(${ready.length})` : ""}</>}
       </button>
     </div>
   );

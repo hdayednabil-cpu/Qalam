@@ -1,10 +1,11 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { searchAll } from "@/lib/queries";
 import { t } from "@/lib/i18n";
 import { Avatar, Card, EmptyState, MasteryDot, PageHeader } from "@/components/ui";
 import { HomeworkRow, TestRow } from "@/components/items";
+import { SearchForm } from "@/components/search-form";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +17,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   return (
     <div className="space-y-5">
       <PageHeader title={t("nav.search")} />
-      <form className="flex gap-2 max-w-xl">
-        <input name="q" defaultValue={q} className="input" placeholder={t("tutor.search")} autoFocus />
-        <button className="btn-primary" type="submit">{t("nav.search")}</button>
-      </form>
+      <SearchForm key={q} query={q} placeholder={t("tutor.search")} label={t("nav.search")} />
       {q && !total && <EmptyState>No matches for “{q}”.</EmptyState>}
       {r.students.length > 0 && (
         <Card title={t("nav.students")}>

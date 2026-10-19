@@ -1,9 +1,9 @@
 import { MAX_PAGES } from "./upload-limits";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import type { DB } from "@/db";
 import * as s from "@/db/schema";
 import type { CurrentUser } from "./auth";
-import { assertStudentAccess, assertTutor, Forbidden } from "./access";
+import { assertStudentAccess, assertTutor, canSee, Forbidden } from "./access";
 import { newId, invitationCode } from "./ids";
 import { addDaysKey, isInBlackout, todayKey, weekdayOf, zonedToUtc, formatDayShort, formatTime } from "./dates";
 import bcrypt from "bcryptjs";
@@ -80,40 +80,54 @@ export type SessionLogInput = {
 };
 
 export async function logSession(db: DB, user: CurrentUser, input: SessionLogInput) {
-  assertTutor(user);
-  const sess = await db.query.sessions.findFirst({ where: eq(s.sessions.id, input.sessionId), with: { sessionStudents: true } });
-  if (!sess || sess.tutorId !== user.tutorId) throw new Forbidden();
-  const allowed = new Set(sess.sessionStudents.map((x) => x.studentId));
-  await db
-    .update(s.sessions)
-    .set({ status: input.status, sharedSummary: input.sharedSummary || null, privateNotes: input.privateNotes || null, planForNext: input.planForNext || null, loggedAt: new Date() })
-    .where(eq(s.sessions.id, sess.id));
-  await db.delete(s.sessionTopics).where(eq(s.sessionTopics.sessionId, sess.id));
-  for (const ps of input.perStudent) {
-    if (!allowed.has(ps.studentId)) throw new Forbidden();
-    await db.update(s.sessionStudents).set({ attended: input.status === "completed" ? (ps.attended ?? true) : false, assessment: ps.assessment || null }).where(and(eq(s.sessionStudents.sessionId, sess.id), eq(s.sessionStudents.studentId, ps.studentId)));
-    for (const tp of ps.topics) {
-      await db.insert(s.sessionTopics).values({ id: newId(), sessionId: sess.id, studentId: ps.studentId, enrolmentTopicId: tp.enrolmentTopicId, masteryLevel: tp.mastery, note: tp.note ?? null });
-      if (tp.mastery) await setMastery(db, user, ps.studentId, tp.enrolmentTopicId, tp.mastery, "session", sess.id);
+  return db.transaction(async (db) => {
+    assertTutor(user);
+    await db.select({ id: s.sessions.id }).from(s.sessions).where(eq(s.sessions.id, input.sessionId)).for("update");
+    const sess = await db.query.sessions.findFirst({ where: eq(s.sessions.id, input.sessionId), with: { sessionStudents: true } });
+    if (!sess || sess.tutorId !== user.tutorId) throw new Forbidden();
+    const allowed = new Set(sess.sessionStudents.map((x) => x.studentId));
+    for (const ps of input.perStudent) {
+      if (!allowed.has(ps.studentId)) throw new Forbidden();
+      for (const tp of ps.topics) {
+        const topic = await db.query.enrolmentTopics.findFirst({ where: eq(s.enrolmentTopics.id, tp.enrolmentTopicId), with: { enrolment: true } });
+        if (!topic || topic.enrolment.studentId !== ps.studentId) throw new Forbidden("Topic does not belong to student");
+      }
     }
-    // Plan for next session becomes a next step (the tutor's second brain).
-    if (input.planForNext?.trim()) {
-      const existing = await db.query.nextSteps.findFirst({ where: and(eq(s.nextSteps.studentId, ps.studentId), eq(s.nextSteps.sourceId, sess.id)) });
-      if (existing) await db.update(s.nextSteps).set({ text: input.planForNext.trim() }).where(eq(s.nextSteps.id, existing.id));
-      else await db.insert(s.nextSteps).values({ id: newId(), studentId: ps.studentId, text: input.planForNext.trim(), source: "session", sourceId: sess.id });
+    for (const id of input.nextStepsDone ?? []) {
+      const step = await db.query.nextSteps.findFirst({ where: eq(s.nextSteps.id, id) });
+      if (!step || !allowed.has(step.studentId)) throw new Forbidden();
     }
-    const st = await db.query.students.findFirst({ where: eq(s.students.id, ps.studentId) });
-    if (st && input.status === "completed") {
-      await notify(db, [st.userId], { type: "session", title: "Session logged", body: input.sharedSummary.slice(0, 120), link: "/student/sessions" });
-      await notify(db, await guardianUserIds(db, st.familyId), { type: "session", title: `Session summary for ${st.preferredName ?? st.firstName}`, body: input.sharedSummary.slice(0, 120), link: "/parent/sessions" });
+    await db
+      .update(s.sessions)
+      .set({ status: input.status, sharedSummary: input.sharedSummary || null, privateNotes: input.privateNotes || null, planForNext: input.planForNext || null, loggedAt: new Date() })
+      .where(eq(s.sessions.id, sess.id));
+    await db.delete(s.sessionTopics).where(eq(s.sessionTopics.sessionId, sess.id));
+    for (const ps of input.perStudent) {
+      if (!allowed.has(ps.studentId)) throw new Forbidden();
+      await db.update(s.sessionStudents).set({ attended: input.status === "completed" ? (ps.attended ?? true) : false, assessment: ps.assessment || null }).where(and(eq(s.sessionStudents.sessionId, sess.id), eq(s.sessionStudents.studentId, ps.studentId)));
+      for (const tp of ps.topics) {
+        await db.insert(s.sessionTopics).values({ id: newId(), sessionId: sess.id, studentId: ps.studentId, enrolmentTopicId: tp.enrolmentTopicId, masteryLevel: tp.mastery, note: tp.note ?? null });
+        if (tp.mastery) await setMastery(db, user, ps.studentId, tp.enrolmentTopicId, tp.mastery, "session", sess.id);
+      }
+      // Plan for next session becomes a next step (the tutor's second brain).
+      if (input.planForNext?.trim()) {
+        const existing = await db.query.nextSteps.findFirst({ where: and(eq(s.nextSteps.studentId, ps.studentId), eq(s.nextSteps.sourceId, sess.id)) });
+        if (existing) await db.update(s.nextSteps).set({ text: input.planForNext.trim() }).where(eq(s.nextSteps.id, existing.id));
+        else await db.insert(s.nextSteps).values({ id: newId(), studentId: ps.studentId, text: input.planForNext.trim(), source: "session", sourceId: sess.id });
+      }
+      const st = await db.query.students.findFirst({ where: eq(s.students.id, ps.studentId) });
+      if (st && input.status === "completed") {
+        await notify(db, [st.userId], { type: "session", title: "Session logged", body: input.sharedSummary.slice(0, 120), link: "/student/sessions" });
+        await notify(db, await guardianUserIds(db, st.familyId), { type: "session", title: `Session summary for ${st.preferredName ?? st.firstName}`, body: input.sharedSummary.slice(0, 120), link: "/parent/sessions" });
+      }
     }
-  }
-  for (const id of input.nextStepsDone ?? []) await db.update(s.nextSteps).set({ status: "done", doneAt: new Date() }).where(eq(s.nextSteps.id, id));
-  for (const qh of input.quickHomework ?? []) {
-    if (!allowed.has(qh.studentId) || !qh.title.trim()) continue;
-    await assignHomework(db, user, { studentId: qh.studentId, sessionId: sess.id, title: qh.title, type: "worksheet", instructions: qh.instructions, dueAt: zonedToUtc(addDaysKey(todayKey(), qh.dueInDays), "20:00"), priority: "normal", topicIds: qh.topicIds });
-  }
-  await audit(db, user, "session.log", "session", sess.id, { status: input.status });
+    for (const id of input.nextStepsDone ?? []) await db.update(s.nextSteps).set({ status: "done", doneAt: new Date() }).where(eq(s.nextSteps.id, id));
+    for (const qh of input.quickHomework ?? []) {
+      if (!allowed.has(qh.studentId) || !qh.title.trim()) continue;
+      await assignHomework(db, user, { studentId: qh.studentId, sessionId: sess.id, title: qh.title, type: "worksheet", instructions: qh.instructions, dueAt: zonedToUtc(addDaysKey(todayKey(), qh.dueInDays), "20:00"), priority: "normal", topicIds: qh.topicIds });
+    }
+    await audit(db, user, "session.log", "session", sess.id, { status: input.status });
+  });
 }
 
 export async function setSessionStatus(db: DB, user: CurrentUser, sessionId: string, status: s.SessionStatus, opts: { reason?: string; override?: boolean | null } = {}) {
@@ -135,28 +149,37 @@ export async function setSessionStatus(db: DB, user: CurrentUser, sessionId: str
 }
 
 export async function rescheduleSession(db: DB, user: CurrentUser, sessionId: string, dateKey: string, time: string) {
-  assertTutor(user);
-  const sess = await db.query.sessions.findFirst({ where: eq(s.sessions.id, sessionId), with: { sessionStudents: true } });
-  if (!sess || sess.tutorId !== user.tutorId) throw new Forbidden();
-  const newId_ = newId();
-  await db.insert(s.sessions).values({
-    id: newId_, tutorId: sess.tutorId, scheduleId: sess.scheduleId, startsAt: zonedToUtc(dateKey, time), durationMinutes: sess.durationMinutes, status: "scheduled",
-    mode: sess.mode, location: sess.location, meetingLink: sess.meetingLink, packageId: sess.packageId,
+  return db.transaction(async (db) => {
+    assertTutor(user);
+    await db.select({ id: s.sessions.id }).from(s.sessions).where(eq(s.sessions.id, sessionId)).for("update");
+    const sess = await db.query.sessions.findFirst({ where: eq(s.sessions.id, sessionId), with: { sessionStudents: true } });
+    if (!sess || sess.tutorId !== user.tutorId) throw new Forbidden();
+    if (sess.status === "rescheduled") throw new Error("This lesson has already moved. Open the replacement session.");
+    const newId_ = newId();
+    await db.insert(s.sessions).values({
+      id: newId_, tutorId: sess.tutorId, scheduleId: sess.scheduleId, startsAt: zonedToUtc(dateKey, time), durationMinutes: sess.durationMinutes, status: "scheduled",
+      mode: sess.mode, location: sess.location, meetingLink: sess.meetingLink, packageId: sess.packageId,
+    });
+    for (const ss of sess.sessionStudents) await db.insert(s.sessionStudents).values({ sessionId: newId_, studentId: ss.studentId });
+    await db.update(s.sessions).set({ status: "rescheduled", rescheduledToId: newId_ }).where(eq(s.sessions.id, sessionId));
+    for (const ss of sess.sessionStudents) {
+      const st = await db.query.students.findFirst({ where: eq(s.students.id, ss.studentId) });
+      if (!st) continue;
+      const when = `${formatDayShort(zonedToUtc(dateKey, time))} ${formatTime(zonedToUtc(dateKey, time))}`;
+      await notify(db, [st.userId], { type: "session", title: `Session moved to ${when}`, link: "/student/sessions" });
+      await notify(db, await guardianUserIds(db, st.familyId), { type: "session", title: `Session moved to ${when}`, link: "/parent/sessions" });
+    }
+    await audit(db, user, "session.reschedule", "session", sessionId, { to: newId_ });
+    return newId_;
   });
-  for (const ss of sess.sessionStudents) await db.insert(s.sessionStudents).values({ sessionId: newId_, studentId: ss.studentId });
-  await db.update(s.sessions).set({ status: "rescheduled", rescheduledToId: newId_ }).where(eq(s.sessions.id, sessionId));
-  for (const ss of sess.sessionStudents) {
-    const st = await db.query.students.findFirst({ where: eq(s.students.id, ss.studentId) });
-    if (!st) continue;
-    const when = `${formatDayShort(zonedToUtc(dateKey, time))} ${formatTime(zonedToUtc(dateKey, time))}`;
-    await notify(db, [st.userId, ...(await guardianUserIds(db, st.familyId))], { type: "session", title: `Session moved to ${when}`, link: "/student/sessions" });
-  }
-  await audit(db, user, "session.reschedule", "session", sessionId, { to: newId_ });
-  return newId_;
 }
 
 export async function createSession(db: DB, user: CurrentUser, input: { studentIds: string[]; dateKey: string; time: string; minutes: number; mode: "in_person" | "online"; location?: string; meetingLink?: string }) {
   assertTutor(user);
+  if (!input.studentIds.length) throw new Error("Select at least one student");
+  if (new Set(input.studentIds).size !== input.studentIds.length) throw new Error("Duplicate students");
+  if (!Number.isInteger(input.minutes) || input.minutes < 15 || input.minutes > 480) throw new Error("Choose a duration between 15 and 480 minutes");
+
   for (const id of input.studentIds) await assertStudentAccess(db, user, id);
   const id = newId();
   const first = await db.query.students.findFirst({ where: eq(s.students.id, input.studentIds[0]) });
@@ -218,26 +241,30 @@ export async function assignHomework(db: DB, user: CurrentUser, input: { student
 }
 
 export async function submitHomework(db: DB, user: CurrentUser, homeworkId: string, fileIds: string[], comment?: string) {
-  const h = await db.query.homework.findFirst({ where: eq(s.homework.id, homeworkId), with: { student: true } });
-  if (!h) throw new Forbidden();
-  if (user.role !== "student" || user.studentId !== h.studentId) throw new Forbidden("Only the student can submit");
-  if (!["assigned", "in_progress", "corrections_requested"].includes(h.status)) throw new Error("This homework is not open for submission");
-  if (!fileIds.length && h.submissionRequirement !== "none") throw new Error("Add at least one page");
-  if (fileIds.length > MAX_PAGES) throw new Error(`Maximum ${MAX_PAGES} pages`);
-  if (new Set(fileIds).size !== fileIds.length) throw new Error("Duplicate pages");
-  const files = fileIds.length ? await db.query.files.findMany({ where: inArray(s.files.id, fileIds) }) : [];
-  if (files.length !== fileIds.length || files.some((f) => f.uploadedByUserId !== user.id || f.tutorId !== user.tutorId)) throw new Forbidden("File does not belong to user");
-  const prev = await db.query.submissions.findMany({ where: eq(s.submissions.homeworkId, homeworkId) });
-  const id = newId();
-  const version = prev.length + 1;
-  await db.insert(s.submissions).values({ id, homeworkId, studentId: h.studentId, version, comment: comment?.trim() || null });
-  for (const [i, fid] of fileIds.entries()) await db.insert(s.submissionPages).values({ id: newId(), submissionId: id, fileId: fid, pageOrder: i });
-  const status: s.HomeworkStatus = h.status === "corrections_requested" ? "resubmitted" : "submitted";
-  await db.update(s.homework).set({ status }).where(eq(s.homework.id, homeworkId));
-  const name = h.student.preferredName ?? h.student.firstName;
-  await notify(db, [await tutorUserId(db, h.tutorId)], { type: "submission", title: `${name} ${version > 1 ? "resubmitted" : "submitted"} ${h.title}`, body: `${fileIds.length} page${fileIds.length === 1 ? "" : "s"}${comment ? ` · "${comment.slice(0, 60)}"` : ""}`, link: `/tutor/homework/${homeworkId}` });
-  await notify(db, await guardianUserIds(db, h.student.familyId), { type: "submission", title: `${name} submitted ${h.title}`, link: "/parent/homework" });
-  return id;
+  return db.transaction(async (db) => {
+    await db.select({ id: s.homework.id }).from(s.homework).where(eq(s.homework.id, homeworkId)).for("update");
+    const h = await db.query.homework.findFirst({ where: eq(s.homework.id, homeworkId), with: { student: true } });
+    if (!h) throw new Forbidden();
+    if (user.role !== "student" || user.studentId !== h.studentId) throw new Forbidden("Only the student can submit");
+    if (!["assigned", "in_progress", "corrections_requested"].includes(h.status)) throw new Error("This homework is not open for submission");
+    if (!fileIds.length && h.submissionRequirement === "photos") throw new Error("Add at least one page");
+    if (h.submissionRequirement === "typed" && !comment?.trim()) throw new Error("Write your answer before submitting");
+    if (fileIds.length > MAX_PAGES) throw new Error(`Maximum ${MAX_PAGES} pages`);
+    if (new Set(fileIds).size !== fileIds.length) throw new Error("Duplicate pages");
+    const files = fileIds.length ? await db.query.files.findMany({ where: inArray(s.files.id, fileIds) }) : [];
+    if (files.length !== fileIds.length || files.some((f) => f.uploadedByUserId !== user.id || f.tutorId !== user.tutorId)) throw new Forbidden("File does not belong to user");
+    const prev = await db.query.submissions.findMany({ where: eq(s.submissions.homeworkId, homeworkId) });
+    const id = newId();
+    const version = prev.length + 1;
+    await db.insert(s.submissions).values({ id, homeworkId, studentId: h.studentId, version, comment: comment?.trim() || null });
+    for (const [i, fid] of fileIds.entries()) await db.insert(s.submissionPages).values({ id: newId(), submissionId: id, fileId: fid, pageOrder: i });
+    const status: s.HomeworkStatus = h.status === "corrections_requested" ? "resubmitted" : "submitted";
+    await db.update(s.homework).set({ status }).where(eq(s.homework.id, homeworkId));
+    const name = h.student.preferredName ?? h.student.firstName;
+    await notify(db, [await tutorUserId(db, h.tutorId)], { type: "submission", title: `${name} ${version > 1 ? "resubmitted" : "submitted"} ${h.title}`, body: `${fileIds.length} page${fileIds.length === 1 ? "" : "s"}${comment ? ` · "${comment.slice(0, 60)}"` : ""}`, link: `/tutor/homework/${homeworkId}` });
+    await notify(db, await guardianUserIds(db, h.student.familyId), { type: "submission", title: `${name} submitted ${h.title}`, link: "/parent/homework" });
+    return id;
+  });
 }
 
 export async function markInProgress(db: DB, user: CurrentUser, homeworkId: string) {
@@ -246,35 +273,51 @@ export async function markInProgress(db: DB, user: CurrentUser, homeworkId: stri
   if (h.status === "assigned") await db.update(s.homework).set({ status: "in_progress" }).where(eq(s.homework.id, homeworkId));
 }
 
+export class ReviewConflict extends Error {}
+
 export async function reviewSubmission(db: DB, user: CurrentUser, input: { homeworkId: string; submissionId: string; action: "approve" | "corrections"; feedback: string; feedbackVisibility: s.Visibility; score?: string; pageComments: { submissionPageId: string; body: string }[]; mastery: { enrolmentTopicId: string; level: s.Mastery }[] }) {
-  assertTutor(user);
-  const h = await db.query.homework.findFirst({ where: eq(s.homework.id, input.homeworkId), with: { student: true } });
-  if (!h || h.tutorId !== user.tutorId) throw new Forbidden();
-  const sub = await db.query.submissions.findFirst({ where: eq(s.submissions.id, input.submissionId) });
-  if (!sub || sub.homeworkId !== h.id) throw new Forbidden();
-  const outcome = input.action === "approve" ? "approved" : "corrections_requested";
-  await db.update(s.submissions).set({ outcome, reviewedAt: new Date() }).where(eq(s.submissions.id, sub.id));
-  await db
-    .update(s.homework)
-    .set({ status: input.action === "approve" ? "completed" : "corrections_requested", score: input.score?.trim() || h.score, completedAt: input.action === "approve" ? new Date() : null })
-    .where(eq(s.homework.id, h.id));
-  if (input.feedback.trim())
-    await db.insert(s.feedback).values({ id: newId(), tutorId: user.tutorId, studentId: h.studentId, targetType: "submission", targetId: sub.id, authorUserId: user.id, body: input.feedback.trim(), visibility: input.feedbackVisibility });
-  for (const pc of input.pageComments)
-    if (pc.body.trim()) await db.insert(s.feedback).values({ id: newId(), tutorId: user.tutorId, studentId: h.studentId, targetType: "submission", targetId: sub.id, submissionPageId: pc.submissionPageId, authorUserId: user.id, body: pc.body.trim(), visibility: "student" });
-  for (const m of input.mastery) await setMastery(db, user, h.studentId, m.enrolmentTopicId, m.level, "homework", h.id);
-  if (input.action === "corrections") {
-    await db.insert(s.nextSteps).values({ id: newId(), studentId: h.studentId, text: `Check corrections: ${h.title}`, source: "homework", sourceId: h.id });
-  }
-  const name = h.student.preferredName ?? h.student.firstName;
-  await notify(db, [h.student.userId], {
-    type: input.action === "approve" ? "review" : "corrections",
-    title: input.action === "approve" ? `Reviewed: ${h.title}${input.score ? ` · ${input.score}` : ""}` : `Corrections requested: ${h.title}`,
-    body: input.feedback.slice(0, 120),
-    link: `/student/homework/${h.id}`,
+  return db.transaction(async (db) => {
+    assertTutor(user);
+    await db.select({ id: s.homework.id }).from(s.homework).where(eq(s.homework.id, input.homeworkId)).for("update");
+    const h = await db.query.homework.findFirst({ where: eq(s.homework.id, input.homeworkId), with: { student: true } });
+    if (!h || h.tutorId !== user.tutorId) throw new Forbidden();
+    const sub = await db.query.submissions.findFirst({ where: eq(s.submissions.id, input.submissionId) });
+    if (!sub || sub.homeworkId !== h.id) throw new Forbidden();
+    const latest = await db.query.submissions.findFirst({ where: eq(s.submissions.homeworkId, h.id), orderBy: [desc(s.submissions.version)] });
+    if (latest?.id !== sub.id) throw new ReviewConflict("A newer submission is available. Open the latest submission to review it.");
+    if (sub.outcome !== "pending" || !["submitted", "resubmitted"].includes(h.status)) throw new ReviewConflict("This submission has already been reviewed. Refresh to see the latest status.");
+    const pages = await db.query.submissionPages.findMany({ where: eq(s.submissionPages.submissionId, sub.id) });
+    const pageIds = new Set(pages.map((page) => page.id));
+    if (input.pageComments.some((comment) => !pageIds.has(comment.submissionPageId))) throw new Forbidden("Page does not belong to submission");
+    const outcome = input.action === "approve" ? "approved" : "corrections_requested";
+    await db.update(s.submissions).set({ outcome, reviewedAt: new Date() }).where(eq(s.submissions.id, sub.id));
+    await db
+      .update(s.homework)
+      .set({ status: input.action === "approve" ? "completed" : "corrections_requested", score: input.score?.trim() || h.score, completedAt: input.action === "approve" ? new Date() : null })
+      .where(eq(s.homework.id, h.id));
+    if (input.feedback.trim())
+      await db.insert(s.feedback).values({ id: newId(), tutorId: user.tutorId, studentId: h.studentId, targetType: "submission", targetId: sub.id, authorUserId: user.id, body: input.feedback.trim(), visibility: input.feedbackVisibility });
+    for (const pc of input.pageComments)
+      if (pc.body.trim()) await db.insert(s.feedback).values({ id: newId(), tutorId: user.tutorId, studentId: h.studentId, targetType: "submission", targetId: sub.id, submissionPageId: pc.submissionPageId, authorUserId: user.id, body: pc.body.trim(), visibility: "student" });
+    for (const m of input.mastery) await setMastery(db, user, h.studentId, m.enrolmentTopicId, m.level, "homework", h.id);
+    const correctionSteps = and(eq(s.nextSteps.studentId, h.studentId), eq(s.nextSteps.source, "homework"), eq(s.nextSteps.sourceId, h.id), eq(s.nextSteps.status, "open"));
+    if (input.action === "corrections") {
+      if (!(await db.query.nextSteps.findFirst({ where: correctionSteps }))) {
+        await db.insert(s.nextSteps).values({ id: newId(), studentId: h.studentId, text: `Check corrections: ${h.title}`, source: "homework", sourceId: h.id });
+      }
+    } else {
+      await db.update(s.nextSteps).set({ status: "done", doneAt: new Date() }).where(correctionSteps);
+    }
+    const name = h.student.preferredName ?? h.student.firstName;
+    await notify(db, [h.student.userId], {
+      type: input.action === "approve" ? "review" : "corrections",
+      title: input.action === "approve" ? `Reviewed: ${h.title}${input.score ? ` · ${input.score}` : ""}` : `Corrections requested: ${h.title}`,
+      body: canSee("student", input.feedbackVisibility) ? input.feedback.slice(0, 120) : "Your tutor has updated this homework.",
+      link: `/student/homework/${h.id}`,
+    });
+    if (input.action === "approve") await notify(db, await guardianUserIds(db, h.student.familyId), { type: "homework", title: `${name} completed ${h.title}${input.score ? ` (${input.score})` : ""}`, link: "/parent/homework" });
+    await audit(db, user, `homework.${input.action}`, "homework", h.id);
   });
-  if (input.action === "approve") await notify(db, await guardianUserIds(db, h.student.familyId), { type: "homework", title: `${name} completed ${h.title}${input.score ? ` (${input.score})` : ""}`, link: "/parent/homework" });
-  await audit(db, user, `homework.${input.action}`, "homework", h.id);
 }
 
 // ---------------------------------------------------------------------------
@@ -310,7 +353,7 @@ export async function recordResult(db: DB, user: CurrentUser, input: { assessmen
     .onConflictDoUpdate({ target: s.assessmentResults.assessmentId, set: { result: input.result.trim(), reflection: input.reflection?.trim() || null, sharedComment: input.sharedComment?.trim() || null, recordedAt: new Date() } });
   for (const tp of a.topics) {
     const wrong = input.wentWrongTopicIds.includes(tp.enrolmentTopicId);
-    await db.update(s.assessmentTopics).set({ wentWrong: wrong }).where(and(eq(s.assessmentTopics.assessmentId, a.id), eq(s.assessmentTopics.enrolmentTopicId, tp.enrolmentTopicId)));
+    await db.update(s.assessmentTopics).set({ wentWrong: wrong, ...(wrong ? { revisionStatus: "needs_work" as const } : {}) }).where(and(eq(s.assessmentTopics.assessmentId, a.id), eq(s.assessmentTopics.enrolmentTopicId, tp.enrolmentTopicId)));
     if (wrong) await setMastery(db, user, a.studentId, tp.enrolmentTopicId, "needs_work", "assessment", a.id, `Went wrong in ${a.name}`);
   }
   if (input.wentWrongTopicIds.length) await db.insert(s.nextSteps).values({ id: newId(), studentId: a.studentId, text: `Correct ${a.name} mistakes (${input.wentWrongTopicIds.length} topics)`, source: "assessment", sourceId: a.id });

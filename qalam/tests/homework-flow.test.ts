@@ -18,13 +18,17 @@ vi.mock("next/headers", () => ({ cookies: async () => ({
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 import { createTestDb, runMigrations } from "@/db";
 import { seed } from "@/db/seed";
-import { homework } from "@/db/schema";
+import { homework, students } from "@/db/schema";
 import { login, logout } from "@/app/login/actions";
-import { getCurrentUser } from "@/lib/auth";
+import { CHILD_COOKIE, getCurrentUser } from "@/lib/auth";
 import { getHomeworkDetail } from "@/lib/queries";
 import { submitHomeworkAction } from "@/app/student/actions";
 import { POST } from "@/app/api/uploads/route";
 import { GET } from "@/app/api/files/[id]/route";
+import { currentChild } from "@/app/parent/child";
+import { switchChild } from "@/app/parent/actions";
+import { reviewAction } from "@/app/tutor/actions";
+import { assignHomework, reviewSubmission, submitHomework } from "@/lib/mutations";
 import { signedFileUrl } from "@/lib/files";
 
 let directory: string;
@@ -96,4 +100,35 @@ it("signs in student, parent and tutor accounts and completes a persisted homewo
   try { await logout(); } catch (error) { expect(String((error as { digest?: string }).digest)).toContain(";/login;"); }
   expect(await getCurrentUser()).toBeNull();
   expect((await upload(hw.id)).status).toBe(401);
+});
+
+
+it("switches between a parent’s three children and ignores a foreign child cookie", async () => {
+  await signIn("ahmed@qalam.demo", "/parent");
+  const initial = await currentChild();
+  expect(initial.kids).toHaveLength(3);
+  for (const kid of initial.kids) {
+    const form = new FormData(); form.set("studentId", kid.id); form.set("back", "/parent/progress");
+    try { await switchChild(form); throw new Error("Expected redirect"); }
+    catch (error) { expect(String((error as { digest?: string }).digest)).toContain(";/parent/progress;"); }
+    const selected = await currentChild();
+    expect(selected.child.id).toBe(kid.id); expect(selected.ws.student.id).toBe(kid.id);
+  }
+  const foreign = (await state.db!.query.students.findFirst({ where: eq(students.firstName, "Daniel") }))!.id;
+  expect(initial.kids.map((kid) => kid.id)).not.toContain(foreign);
+  state.cookies.set(CHILD_COOKIE, foreign);
+  expect(initial.kids.map((kid) => kid.id)).toContain((await currentChild()).child.id);
+});
+
+it("reloads a stale tutor review with a clear status instead of saving over the newer attempt", async () => {
+  const student = await signIn("daniel", "/student");
+  const tutor = await signIn("nabil@qalam.demo", "/tutor");
+  const hw = await assignHomework(state.db!, tutor, { studentId: student.studentId!, title: "Stale review scenario", type: "worksheet", dueAt: new Date(), priority: "normal", submissionRequirement: "none", topicIds: [] });
+  const first = await submitHomework(state.db!, student, hw, []);
+  await reviewSubmission(state.db!, tutor, { homeworkId: hw, submissionId: first, action: "corrections", feedback: "Try again", feedbackVisibility: "student", pageComments: [], mastery: [] });
+  await submitHomework(state.db!, student, hw, []);
+  const form = new FormData(); form.set("homeworkId", hw); form.set("submissionId", first); form.set("action", "approve");
+  try { await reviewAction(form); throw new Error("Expected redirect"); }
+  catch (error) { expect(String((error as { digest?: string }).digest)).toContain(`;/tutor/homework/${hw}?reviewChanged=1;`); }
+  expect((await getHomeworkDetail(state.db!, tutor, hw))!.view.status).toBe("resubmitted");
 });

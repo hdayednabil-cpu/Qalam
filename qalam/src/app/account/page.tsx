@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { requireUser, homeFor } from "@/lib/auth";
 import { Card } from "@/components/ui";
 import { Wordmark } from "@/components/shell";

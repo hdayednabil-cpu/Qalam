@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { PendingButton } from "@/components/pending-button";
+import Link from "@/components/app-link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
@@ -77,12 +78,12 @@ export default async function StudentWorkspace({ params }: { params: Promise<{ i
           <form action={setViewAs}>
             <input type="hidden" name="role" value="student" />
             <input type="hidden" name="id" value={id} />
-            <button className="btn-ghost" type="submit">{t("tutor.viewAsStudent")}</button>
+            <PendingButton pendingLabel="Opening preview…" className="btn-ghost" type="submit">{t("tutor.viewAsStudent")}</PendingButton>
           </form>
           <form action={setViewAs}>
             <input type="hidden" name="role" value="parent" />
             <input type="hidden" name="id" value={ws.family.id} />
-            <button className="btn-ghost" type="submit">{t("tutor.viewAsParent")}</button>
+            <PendingButton pendingLabel="Opening preview…" className="btn-ghost" type="submit">{t("tutor.viewAsParent")}</PendingButton>
           </form>
           <a className="btn-ghost" href={`/tutor/students/${id}/export`}>{t("common.exportJson")}</a>
         </div>
@@ -167,7 +168,7 @@ export default async function StudentWorkspace({ params }: { params: Promise<{ i
                 <li key={n.id} className="flex items-start gap-2 text-sm">
                   <form action={nextStepAction}>
                     <input type="hidden" name="done" value={n.id} />
-                    <button className="mt-0.5 size-4 rounded-full border-2 border-ink-300 hover:bg-moss-100" type="submit" title={t("common.markDone")} />
+                    <PendingButton pendingLabel="Updating…" iconOnly className="mt-0.5 size-4 rounded-full border-2 border-ink-300 hover:bg-moss-100" type="submit" title={t("common.markDone")} />
                   </form>
                   <span>
                     {n.text} <span className="text-xs text-mute">· {n.source}</span>
@@ -181,7 +182,7 @@ export default async function StudentWorkspace({ params }: { params: Promise<{ i
           <form action={nextStepAction} className="mt-3 flex gap-2">
             <input type="hidden" name="studentId" value={id} />
             <input name="text" className="input" placeholder={t("tutor.addNextStep")} required />
-            <button className="btn-secondary" type="submit">{t("common.add")}</button>
+            <PendingButton pendingLabel="Updating…" className="btn-secondary" type="submit">{t("common.add")}</PendingButton>
           </form>
         </Card>
         <Card title={t("tutor.privateNote")} subtitle="Academic notes are tutor-only. The important note is shown on the student's dashboard.">
@@ -202,7 +203,7 @@ export default async function StudentWorkspace({ params }: { params: Promise<{ i
                 </select>
               </Field>
               <div className="flex items-end">
-                <button className="btn-secondary w-full" type="submit">{t("common.save")}</button>
+                <PendingButton pendingLabel="Saving…" className="btn-secondary w-full" type="submit">{t("common.save")}</PendingButton>
               </div>
             </div>
           </form>
@@ -257,20 +258,20 @@ export default async function StudentWorkspace({ params }: { params: Promise<{ i
                                 <option key={l} value={l}>{masteryLabel(l)}</option>
                               ))}
                             </select>
-                            <button className="btn-secondary btn-sm" type="submit">{t("common.save")}</button>
+                            <PendingButton pendingLabel="Saving…" className="btn-secondary btn-sm" type="submit">{t("common.save")}</PendingButton>
                           </form>
                           {!tp.isCurrent && (
                             <form action={currentTopicAction}>
                               <input type="hidden" name="studentId" value={id} />
                               <input type="hidden" name="topicId" value={tp.id} />
-                              <button className="btn-ghost btn-sm" type="submit">Set current</button>
+                              <PendingButton pendingLabel="Updating…" className="btn-ghost btn-sm" type="submit">Set current</PendingButton>
                             </form>
                           )}
                           <form action={topicScopeAction}>
                             <input type="hidden" name="studentId" value={id} />
                             <input type="hidden" name="topicId" value={tp.id} />
                             <input type="hidden" name="inScope" value={tp.inScope ? "false" : "true"} />
-                            <button className="btn-ghost btn-sm" type="submit">{tp.inScope ? "Exclude" : "Include"}</button>
+                            <PendingButton pendingLabel="Updating…" className="btn-ghost btn-sm" type="submit">{tp.inScope ? "Exclude" : "Include"}</PendingButton>
                           </form>
                         </div>
                       ))}
@@ -290,7 +291,7 @@ export default async function StudentWorkspace({ params }: { params: Promise<{ i
               ))}
             </select>
           </Field>
-          <button className="btn-secondary" type="submit">Enrol</button>
+          <PendingButton pendingLabel="Enrolling…" className="btn-secondary" type="submit">Enrol</PendingButton>
         </form>
       </section>
 
@@ -355,7 +356,7 @@ export default async function StudentWorkspace({ params }: { params: Promise<{ i
                 ))}
               </select>
               <label className="text-sm flex items-center gap-1.5"><input type="checkbox" name="important" /> Important</label>
-              <button className="btn-primary" type="submit">{t("common.save")}</button>
+              <PendingButton pendingLabel="Saving feedback…" className="btn-primary" type="submit">{t("common.save")}</PendingButton>
             </div>
           </form>
           {ws.feedback.length ? (
@@ -411,7 +412,7 @@ export default async function StudentWorkspace({ params }: { params: Promise<{ i
                       </div>
                       <form action={invitationAction}>
                         <input type="hidden" name="revoke" value={i.id} />
-                        <button className="btn-ghost btn-sm" type="submit">{t("tutor.revoke")}</button>
+                        <PendingButton pendingLabel="Updating invitation…" className="btn-ghost btn-sm" type="submit">{t("tutor.revoke")}</PendingButton>
                       </form>
                     </div>
                     <div className="mt-2">
@@ -424,14 +425,14 @@ export default async function StudentWorkspace({ params }: { params: Promise<{ i
               {!studentUser && (
                 <form action={invitationAction}>
                   <input type="hidden" name="studentId" value={id} />
-                  <button className="btn-secondary btn-sm" type="submit">{t("tutor.generateInvite")}: student</button>
+                  <PendingButton pendingLabel="Updating invitation…" className="btn-secondary btn-sm" type="submit">{t("tutor.generateInvite")}: student</PendingButton>
                 </form>
               )}
               {ws.guardians.map((g, i) =>
                 guardianUsers[i] ? null : (
                   <form key={g.id} action={invitationAction}>
                     <input type="hidden" name="guardianId" value={g.id} />
-                    <button className="btn-secondary btn-sm" type="submit">{t("tutor.generateInvite")}: {g.fullName.split(" ")[0]}</button>
+                    <PendingButton pendingLabel="Updating invitation…" className="btn-secondary btn-sm" type="submit">{t("tutor.generateInvite")}: {g.fullName.split(" ")[0]}</PendingButton>
                   </form>
                 ),
               )}
