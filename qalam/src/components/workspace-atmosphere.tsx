@@ -1,6 +1,9 @@
-/** Code-native artwork: no downloads, canvas loop or extra client JavaScript. */
+import { AmbientVideo } from "./ambient-video";
+
+/** Shared by every workspace route, so navigation keeps the same video element. */
 export function WorkspaceAtmosphere() {
   return <div className="workspace-atmosphere" aria-hidden="true">
+    <AmbientVideo artwork="outlines" className="workspace-film" />
     <svg className="atmosphere-books" viewBox="0 0 400 400" fill="none">
       <g stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <g transform="rotate(-14 200 170)">

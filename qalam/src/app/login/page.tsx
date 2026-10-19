@@ -5,7 +5,7 @@ import { getCurrentUser, homeFor } from "@/lib/auth";
 import { t } from "@/lib/i18n";
 import { Wordmark } from "@/components/shell";
 import { ArrowUpRight } from "lucide-react";
-import { LearningOrbit } from "@/components/learning-orbit";
+import { AmbientVideo } from "@/components/ambient-video";
 import { LoginForm } from "./login-form";
 import { demoLogin } from "./actions";
 import { bootstrapTutor, demoEnabled } from "@/lib/bootstrap";
@@ -19,9 +19,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <div className="min-h-dvh grid bg-surface lg:grid-cols-[1fr_1fr]">
       <div className="login-art relative isolate flex flex-col justify-between overflow-hidden p-6 text-white sm:p-8 lg:min-h-[760px] lg:p-12 xl:p-16">
+        <AmbientVideo artwork="welcome" className="welcome-film" />
+        <div className="welcome-film-shade" aria-hidden="true" />
         <div className="relative z-10 flex items-center justify-between"><Wordmark /><span className="text-[10px] uppercase tracking-[.18em] text-slate-400">The learning workspace</span></div>
-        <div className="relative z-10 pt-7 lg:py-10">
-          <LearningOrbit className="absolute -right-16 -top-20 size-64 opacity-40 lg:relative lg:right-auto lg:top-auto lg:mx-auto lg:mb-6 lg:size-80 lg:opacity-100 xl:size-96" />
+        <div className="relative z-10 pt-16 lg:pb-12 lg:pt-72">
           <p className="relative mb-3 text-[10px] font-semibold uppercase tracking-[.2em] text-ink-200">Clarity for every lesson</p>
           <h1 className="relative max-w-lg text-[28px] lg:text-[48px] font-semibold leading-[1.08] tracking-[-.055em] xl:text-[58px]">Small steps.<br /><span className="text-[#a5f5e0]">Lasting progress.</span></h1>
           <p className="relative mt-5 hidden max-w-sm text-sm lg:block leading-7 text-slate-300">A thoughtful space for lessons, homework and everything you’re working towards. Together.</p>

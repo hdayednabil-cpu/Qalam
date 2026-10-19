@@ -81,6 +81,20 @@ body { background: radial-gradient(ellipse at 95% 0%, #e9e5ff80, transparent 45%
 .mobile-menu::backdrop { background: rgb(16 24 44 / 45%); backdrop-filter: blur(4px); }
 .login-art::before { content: ""; position: absolute; inset: 0; opacity: .13; background-image: radial-gradient(#c3cef8 1px, transparent 1px); background-size: 28px 28px; }
 
+/* Approved Qalam films: real posters first, no media request until after load. */
+.ambient-video { position: absolute; pointer-events: none; overflow: hidden; background-size: cover; background-position: center; }
+.ambient-video video { width: 100%; height: 100%; object-fit: cover; object-position: inherit; opacity: 0; transition: opacity .45s ease; }
+.ambient-video video[data-playing="true"] { opacity: 1; }
+.welcome-film { inset: 0; background-position: 64% center; object-position: 64% center; }
+.welcome-film-shade { position: absolute; pointer-events: none; inset: 0; background: linear-gradient(180deg, #07112b25 20%, #07112b70 50%, #07112bf2 100%); }
+.workspace-film { top: 0; right: 0; width: min(100%, 1000px); aspect-ratio: 3 / 4; filter: invert(1) hue-rotate(180deg) saturate(.65); opacity: .55; mask-image: linear-gradient(#000 60%, transparent 100%); }
+@media (max-width: 767px) {
+  .welcome-film { background-position: 70% 43%; object-position: 70% 43%; }
+  .welcome-film-shade { background: linear-gradient(90deg, #07112be0, #07112b35); }
+  .workspace-film { width: 100%; opacity: .45; }
+}
+@media (prefers-reduced-motion: reduce) { .ambient-video video { visibility: hidden; transition: none; } }
+
 /* Page-zoom for homework review */
 .zoomable { cursor: zoom-in; transition: transform 0.2s ease; }
 .zoomable:hover { transform: scale(1.01); }
