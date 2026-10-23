@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { createTestDb, runMigrations, type DB } from "@/db";
 import * as s from "@/db/schema";
 import { seed } from "@/db/seed";
@@ -133,10 +133,15 @@ describe("package counting", () => {
     expect(sessionCounts({ status: "rescheduled", startsAt: base, cancelledAt: null, countsAgainstPackage: null }, 24)).toBe(false);
     expect(packageUsage(8, [{ status: "completed", startsAt: base, cancelledAt: null, countsAgainstPackage: null }], 24).remaining).toBe(7);
   });
-  it("seeded Daniel has 2 sessions left on his package", async () => {
+  it("marks a package low when two sessions remain", () => {
+    const completed = Array.from({ length: 6 }, () => ({ status: "completed", startsAt: base, cancelledAt: null, countsAgainstPackage: null }));
+    expect(packageUsage(8, completed, 24)).toEqual({ total: 8, used: 6, remaining: 2, scheduled: 0, low: true });
+  });
+  it("reports current seeded package usage without assuming today's schedule", async () => {
     const ws = await getWorkspace(db, users.tutor, ids.Daniel);
-    expect(ws.pkg?.remaining).toBe(2);
-    expect(ws.pkg?.low).toBe(true);
+    const activePackage = (await db.query.packages.findFirst({ where: and(eq(s.packages.studentId, ids.Daniel), eq(s.packages.active, true)) }))!;
+    const packageSessions = await db.query.sessions.findMany({ where: eq(s.sessions.packageId, activePackage.id) });
+    expect(ws.pkg).toMatchObject({ id: activePackage.id, ...packageUsage(activePackage.totalSessions, packageSessions, 24), shared: false });
   });
 });
 
