@@ -28,4 +28,35 @@ if (process.env.VERCEL_ENV !== "preview" || process.env.PREVIEW_DATABASE_ISOLATE
   }
   run(["tsx", "src/db/migrate.ts"]);
   run(["tsx", "src/db/seed-if-empty.ts"]);
+  await ensurePrivateBucket();
+}
+
+// Creates the private upload bucket in the preview project if it does not exist yet.
+async function ensurePrivateBucket() {
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_STORAGE_BUCKET } = process.env;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_STORAGE_BUCKET) {
+    console.error("Preview database preparation: the preview storage settings are incomplete.");
+    process.exit(1);
+  }
+  if (SUPABASE_URL.includes(PRODUCTION_PROJECT_REF)) {
+    console.error("Preview database preparation: the preview storage settings point at the live Qalam project. Stopping.");
+    process.exit(1);
+  }
+  const { createClient } = await import("@supabase/supabase-js");
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  const { data } = await supabase.storage.getBucket(SUPABASE_STORAGE_BUCKET);
+  if (data) {
+    if (data.public) {
+      console.error("Preview database preparation: the preview upload bucket is public. Make it private before continuing.");
+      process.exit(1);
+    }
+    console.log("Preview upload bucket is ready and private.");
+    return;
+  }
+  const { error } = await supabase.storage.createBucket(SUPABASE_STORAGE_BUCKET, { public: false });
+  if (error) {
+    console.error("Preview database preparation: could not create the preview upload bucket.");
+    process.exit(1);
+  }
+  console.log("Private preview upload bucket created.");
 }
