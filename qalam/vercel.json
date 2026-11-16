@@ -1,4 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build && node scripts/verify-preview-storage.mjs"
+  "buildCommand": "node scripts/check-database-config.mjs && npm run build && node scripts/verify-preview-storage.mjs"
 }

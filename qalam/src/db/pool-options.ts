@@ -1,22 +1,23 @@
 import type { PoolConfig } from "pg";
 
-/** Keep migration sessions intact; use shared transaction pooling for Vercel requests. */
+export type DatabasePurpose = "runtime" | "migration";
+
+/**
+ * The connection string for each purpose, taken as configured and never rewritten.
+ * Runtime requests use DATABASE_URL (on Vercel: Supabase's transaction pooler, port 6543).
+ * Migrations use MIGRATION_DATABASE_URL when set (a session pooler or direct connection),
+ * otherwise DATABASE_URL.
+ */
+export function databaseUrl(purpose: DatabasePurpose, env: Record<string, string | undefined> = process.env): string | undefined {
+  const runtime = env.DATABASE_URL?.trim() || undefined;
+  if (purpose === "migration") return env.MIGRATION_DATABASE_URL?.trim() || runtime;
+  return runtime;
+}
+
+/** Small pools on serverless so each function instance holds few connections. */
 export function databasePoolOptions(connectionString: string, serverless: boolean): PoolConfig {
-  let runtimeUrl = connectionString;
-  if (serverless) {
-    const url = new URL(connectionString);
-    // Only the documented Supabase shared pooler endpoint has this port mapping.
-    // Preserve credentials, database, TLS and other query parameters verbatim via URL.
-    if (/^aws-[a-z0-9-]+\.pooler\.supabase\.com$/.test(url.hostname) && (!url.port || url.port === "5432")) {
-      if (url.searchParams.has("host") || url.searchParams.has("port")) {
-        throw new Error("Configure the database pooler host and port in the URL authority, not query parameters.");
-      }
-      url.port = "6543";
-      runtimeUrl = url.toString();
-    }
-  }
   return {
-    connectionString: runtimeUrl,
+    connectionString,
     max: serverless ? 2 : 5,
     idleTimeoutMillis: serverless ? 1_000 : 10_000,
     connectionTimeoutMillis: 10_000,

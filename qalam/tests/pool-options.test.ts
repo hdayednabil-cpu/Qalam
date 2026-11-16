@@ -1,34 +1,59 @@
 import { describe, expect, it } from "vitest";
-import { databasePoolOptions } from "@/db/pool-options";
+import { databasePoolOptions, databaseUrl } from "@/db/pool-options";
+// @ts-expect-error plain JavaScript module shared with the Vercel build check
+import { runtimeDatabaseUrlProblems } from "../scripts/database-config.mjs";
 
-describe("serverless database connection routing", () => {
-  const session = "postgresql://postgres.project:encoded%40password@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require";
+const sessionPooler = "postgresql://postgres.project:encoded%40password@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require";
+const transactionPooler = sessionPooler.replace(":5432/", ":6543/");
 
-  it("releases backend sessions between transactions without changing credentials or TLS", () => {
-    const options = databasePoolOptions(session, true);
-    const before = new URL(session);
-    const after = new URL(options.connectionString!);
-    expect(after.port).toBe("6543");
-    for (const key of ["username", "password", "hostname", "pathname", "search"] as const) expect(after[key]).toBe(before[key]);
+describe("database connection settings", () => {
+  it("uses each configured connection string exactly as given", () => {
+    for (const url of [sessionPooler, transactionPooler, "postgres://user:password@localhost:5432/test"]) {
+      expect(databasePoolOptions(url, true).connectionString).toBe(url);
+      expect(databasePoolOptions(url, false).connectionString).toBe(url);
+    }
+  });
+
+  it("keeps serverless pools small and quick to release", () => {
+    const options = databasePoolOptions(transactionPooler, true);
     expect(options.max).toBeLessThanOrEqual(2);
     expect(options.idleTimeoutMillis).toBeLessThanOrEqual(1_000);
     expect(options.connectionTimeoutMillis).toBeGreaterThan(0);
   });
 
-  it("keeps migration and local session connections unchanged", () => {
-    expect(databasePoolOptions(session, false).connectionString).toBe(session);
+  it("uses the migration URL for migrations and the app URL for requests", () => {
+    const env = { DATABASE_URL: transactionPooler, MIGRATION_DATABASE_URL: sessionPooler };
+    expect(databaseUrl("runtime", env)).toBe(transactionPooler);
+    expect(databaseUrl("migration", env)).toBe(sessionPooler);
   });
 
-  it.each([
-    "postgres://user:password@localhost:5432/test",
-    "postgres://user:password@db.project.supabase.co:5432/postgres",
-    "postgres://user:password@aws-0-eu-west-1.pooler.supabase.com.attacker.test:5432/postgres",
-    session.replace(":5432/", ":6543/"),
-  ])("does not rewrite other endpoints or existing transaction URLs: %s", (url) => {
-    expect(databasePoolOptions(url, true).connectionString).toBe(url);
+  it("falls back to the app URL for migrations, and to the embedded database when nothing is set", () => {
+    expect(databaseUrl("migration", { DATABASE_URL: transactionPooler })).toBe(transactionPooler);
+    expect(databaseUrl("runtime", { DATABASE_URL: "  " })).toBeUndefined();
+    expect(databaseUrl("migration", {})).toBeUndefined();
+  });
+});
+
+describe("Vercel build check for the app's database URL", () => {
+  it("accepts the transaction pooler, other hosts and an unset URL", () => {
+    expect(runtimeDatabaseUrlProblems(transactionPooler)).toEqual([]);
+    expect(runtimeDatabaseUrlProblems("postgres://user:password@db.project.supabase.co:5432/postgres")).toEqual([]);
+    expect(runtimeDatabaseUrlProblems("postgres://user:password@aws-0-eu-west-1.pooler.supabase.com.attacker.test:5432/postgres")).toEqual([]);
+    expect(runtimeDatabaseUrlProblems(undefined)).toEqual([]);
   });
 
-  it("does not let query-string connection overrides silently retain session mode", () => {
-    expect(() => databasePoolOptions(`${session}&port=5432`, true)).toThrow("URL authority");
+  it("rejects the session pooler, with or without an explicit port", () => {
+    expect(runtimeDatabaseUrlProblems(sessionPooler)).toHaveLength(1);
+    expect(runtimeDatabaseUrlProblems(sessionPooler.replace(":5432", ""))).toHaveLength(1);
+  });
+
+  it("rejects host or port overrides in query parameters", () => {
+    expect(runtimeDatabaseUrlProblems(`${transactionPooler}&port=5432`).length).toBeGreaterThan(0);
+  });
+
+  it("never repeats the connection string, which contains the password", () => {
+    const messages = [...runtimeDatabaseUrlProblems(sessionPooler), ...runtimeDatabaseUrlProblems(`${transactionPooler}&port=5432`), ...runtimeDatabaseUrlProblems("not a url")];
+    for (const message of messages) expect(message).not.toContain("encoded%40password");
+    expect(runtimeDatabaseUrlProblems("not a url")).toHaveLength(1);
   });
 });
