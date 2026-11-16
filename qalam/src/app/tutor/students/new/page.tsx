@@ -1,3 +1,4 @@
+import { PendingButton } from "@/components/pending-button";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import * as s from "@/db/schema";
@@ -72,7 +73,7 @@ export default async function NewStudentPage() {
             <Field label="Package (sessions)" hint="Leave blank for pay-as-you-go"><input name="packageSessions" type="number" className="input" min={1} placeholder="8" /></Field>
           </div>
         </Card>
-        <button className="btn-primary" type="submit">Create student & generate invitations</button>
+        <PendingButton pendingLabel="Creating student…" className="btn-primary" type="submit">Create student & generate invitations</PendingButton>
       </form>
     </div>
   );

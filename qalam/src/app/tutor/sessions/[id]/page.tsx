@@ -1,3 +1,4 @@
+import { PendingButton } from "@/components/pending-button";
 import { notFound } from "next/navigation";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/auth";
@@ -72,7 +73,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
               <input type="hidden" name="sessionId" value={sess.id} />
               <input type="hidden" name="status" value={st} />
               <input type="hidden" name="back" value={`/tutor/sessions/${sess.id}`} />
-              <button className="btn-secondary btn-sm" type="submit">{st === "scheduled" ? "Reopen as scheduled" : t(`status.${st}`)}</button>
+              <PendingButton pendingLabel="Updating session…" className="btn-secondary btn-sm" type="submit">{st === "scheduled" ? "Reopen as scheduled" : t(`status.${st}`)}</PendingButton>
             </form>
           ))}
         </div>
@@ -88,7 +89,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
             </select>
           </Field>
           <Field label="Reason"><input name="reason" className="input" defaultValue={sess.packageOverrideReason ?? ""} placeholder="required for overrides" /></Field>
-          <button className="btn-secondary" type="submit">{t("common.save")}</button>
+          <PendingButton pendingLabel="Updating session…" className="btn-secondary" type="submit">{t("common.save")}</PendingButton>
         </form>
         {(isFuture || sess.status === "scheduled") && (
           <form action={rescheduleAction} className="mt-3 flex flex-wrap items-end gap-2">
@@ -96,7 +97,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
             <input type="hidden" name="back" value="/tutor/calendar" />
             <Field label={t("tutor.reschedule")}><input name="date" type="date" className="input" defaultValue={toDateKey(sess.startsAt)} required /></Field>
             <Field label={t("common.time")}><input name="time" type="time" className="input" defaultValue={formatTime24(sess.startsAt)} required /></Field>
-            <button className="btn-secondary" type="submit">{t("tutor.reschedule")}</button>
+            <PendingButton pendingLabel="Rescheduling…" className="btn-secondary" type="submit">{t("tutor.reschedule")}</PendingButton>
           </form>
         )}
       </Card>

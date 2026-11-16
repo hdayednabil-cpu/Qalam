@@ -1,3 +1,4 @@
+import { PendingButton } from "@/components/pending-button";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import * as sch from "@/db/schema";
@@ -39,7 +40,7 @@ export default async function CurriculumPage() {
           <Field label="Board"><input name="board" className="input" placeholder="School / Edexcel / IB" /></Field>
           <Field label="Level"><input name="level" className="input" placeholder="Grade 9" /></Field>
           <Field label="Topics" className="sm:col-span-2"><textarea name="text" className="input min-h-48 font-mono text-sm" required placeholder={"## Number\n1.1 | Place value\n1.2 | Rounding\n## Algebra\nExpanding brackets"} /></Field>
-          <button className="btn-primary" type="submit">Import</button>
+          <PendingButton pendingLabel="Importing…" className="btn-primary" type="submit">Import</PendingButton>
         </form>
       </Card>
     </div>

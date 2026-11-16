@@ -2,22 +2,33 @@ import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import * as schema from "./schema";
+import { databasePoolOptions, databaseUrl, type DatabasePurpose } from "./pool-options";
 
 export type DB = PgDatabase<PgQueryResultHKT, typeof schema>;
 
 // One database client per process. In development Next.js hot-reloads modules,
 // so the instance is parked on globalThis to avoid opening PGlite twice.
-const g = globalThis as unknown as { __qalamDb?: DB; __qalamPglite?: import("@electric-sql/pglite").PGlite };
+const g = globalThis as unknown as { __qalamDb?: DB; __qalamPglite?: import("@electric-sql/pglite").PGlite; __qalamPostgresDbs?: WeakSet<object> };
 
-export function getDb(): DB {
-  if (g.__qalamDb) return g.__qalamDb;
-  const url = process.env.DATABASE_URL?.trim();
+// Databases opened on Postgres (rather than embedded PGlite), so migrations pick the right driver.
+// Kept on globalThis for the same hot-reload reason as the client itself.
+const postgresDbs = (g.__qalamPostgresDbs ??= new WeakSet<object>());
+
+export function getDb(purpose: DatabasePurpose = "runtime"): DB {
+  if (purpose === "runtime" && g.__qalamDb) return g.__qalamDb;
+  const url = databaseUrl(purpose);
   if (url) {
     // Postgres / Supabase. `pg` is a CommonJS module; require keeps it off the bundle.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Pool } = require("pg") as typeof import("pg");
-    const pool = new Pool({ connectionString: url, max: 5 });
-    g.__qalamDb = drizzlePg(pool, { schema }) as unknown as DB;
+    const pool = new Pool(databasePoolOptions(url, purpose === "runtime" && process.env.VERCEL === "1"));
+    // An idle socket can fail after a database restart; pg removes that client.
+    // Handle its event without logging credentials, query parameters or student data.
+    pool.on("error", () => console.error("Database pool: an idle connection closed unexpectedly."));
+    const db = drizzlePg(pool, { schema }) as unknown as DB;
+    postgresDbs.add(db);
+    if (purpose === "migration") return db;
+    g.__qalamDb = db;
   } else {
     // Embedded Postgres (PGlite) persisted under ./data/pg — zero setup.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -41,7 +52,7 @@ export async function createTestDb(): Promise<DB> {
 
 export async function runMigrations(db: DB) {
   const folder = "./drizzle";
-  if (process.env.DATABASE_URL?.trim()) {
+  if (postgresDbs.has(db)) {
     const { migrate } = await import("drizzle-orm/node-postgres/migrator");
     await migrate(db as never, { migrationsFolder: folder });
   } else {

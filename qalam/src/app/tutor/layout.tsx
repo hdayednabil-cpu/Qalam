@@ -11,11 +11,11 @@ export default async function TutorLayout({ children }: { children: React.ReactN
   if (user.role !== "tutor") redirect("/");
   const unread = (await unreadNotifications(getDb(), user.id)).length;
   const items: NavItem[] = [
-    { href: "/tutor", label: t("nav.dashboard"), icon: "dashboard" },
-    { href: "/tutor/students", label: t("nav.students"), icon: "students" },
-    { href: "/tutor/calendar", label: t("nav.calendar"), icon: "calendar" },
+    { href: "/tutor", label: t("nav.dashboard"), icon: "dashboard", mobile: true },
+    { href: "/tutor/students", label: t("nav.students"), icon: "students", mobile: true },
+    { href: "/tutor/calendar", label: t("nav.calendar"), icon: "calendar", mobile: true },
     { href: "/tutor/search", label: t("nav.search"), icon: "search" },
-    { href: "/tutor/inbox", label: t("nav.inbox"), icon: "inbox" },
+    { href: "/tutor/inbox", label: t("nav.inbox"), icon: "inbox", mobile: true },
     { href: "/tutor/curriculum", label: t("nav.curriculum"), icon: "curriculum" },
     { href: "/tutor/invitations", label: t("nav.invitations"), icon: "invitations" },
   ];

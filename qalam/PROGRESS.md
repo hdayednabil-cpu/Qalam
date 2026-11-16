@@ -1,5 +1,7 @@
 # PROGRESS
 
+> Historical log. The current design system is described in `../docs/experience-refinement-review.md` and implemented in `src/app/globals.css`: a light workspace with a navy frame, violet actions and teal accents, set in Manrope and Inter. Mentions below of walnut, brass, sage, Fraunces or `AmbientBackground` describe earlier versions that have since been replaced or removed.
+
 Status as of 14 September 2026. "Verified" means it was exercised in the build
 container: `npm run build` passes, `npm run db:reset` seeds from clean,
 `npm test` passes (10 tests), and every route was fetched with a real session

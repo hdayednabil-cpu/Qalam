@@ -1,10 +1,12 @@
-import Link from "next/link";
+import { PendingButton } from "@/components/pending-button";
+import Link from "@/components/app-link";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { listBlackouts, listStudents, sessionsBetween } from "@/lib/queries";
 import { t } from "@/lib/i18n";
 import { addDaysKey, formatDate, formatDayShort, formatTime, isInBlackout, minutesLabel, startOfWeekKey, toDateKey, todayKey, WEEKDAYS_SHORT, formatMonthYear } from "@/lib/dates";
 import { Badge, Card, EmptyState, Field, LinkButton, PageHeader, StatusBadge, cx } from "@/components/ui";
+import { StudentPicker } from "@/components/student-picker";
 import { blackoutAction, createSessionAction, generateSessionsAction } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -30,15 +32,15 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
         subtitle={`${t("tutor.week")} of ${formatDate(start)} · ${formatMonthYear(start)} · working days Sun–Thu, hours 2 PM–10 PM`}
         action={
           <>
-            <LinkButton href={`/tutor/calendar?week=${addDaysKey(start, -7)}`}>←</LinkButton>
+            <LinkButton ariaLabel="Previous week" href={`/tutor/calendar?week=${addDaysKey(start, -7)}`}>←</LinkButton>
             <LinkButton href="/tutor/calendar">{t("common.today")}</LinkButton>
-            <LinkButton href={`/tutor/calendar?week=${addDaysKey(start, 7)}`}>→</LinkButton>
-            <form action={generateSessionsAction}><button className="btn-secondary" type="submit">{t("tutor.generateSessions")}</button></form>
+            <LinkButton ariaLabel="Next week" href={`/tutor/calendar?week=${addDaysKey(start, 7)}`}>→</LinkButton>
+            <form action={generateSessionsAction}><PendingButton pendingLabel="Generating…" className="btn-secondary" type="submit">{t("tutor.generateSessions")}</PendingButton></form>
           </>
         }
       />
 
-      <div className="grid gap-2 md:grid-cols-7">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
         {days.map((d) => {
           const list = byDay.get(d)!;
           const off = isInBlackout(d, blackouts);
@@ -68,8 +70,8 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           {upcoming.length ? (
             <div className="divide-y divide-line/70">
               {upcoming.map((s) => (
-                <Link key={s.id} href={`/tutor/sessions/${s.id}`} className="flex items-center gap-3 py-2 text-sm hover:bg-ink-50/60 -mx-2 px-2 rounded-lg">
-                  <span className="w-28 tabular-nums text-mute">{formatDayShort(s.startsAt)} {formatTime(s.startsAt)}</span>
+                <Link key={s.id} href={`/tutor/sessions/${s.id}`} className="flex flex-wrap items-center gap-3 py-3 text-sm hover:bg-ink-50/60 -mx-2 px-2 rounded-lg">
+                  <span className="w-28 shrink-0 tabular-nums text-mute"><span className="block">{formatDayShort(s.startsAt)}</span><span className="block whitespace-nowrap text-xs">{formatTime(s.startsAt)}</span></span>
                   <span className="flex-1 font-medium">{s.students.map((x) => x.name).join(" & ")}</span>
                   <span className="text-xs text-mute">{minutesLabel(s.durationMinutes)} · {s.mode === "online" ? t("common.online") : s.location}</span>
                   <StatusBadge status={s.status} />
@@ -83,19 +85,15 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
         <div className="space-y-6">
           <Card title="Add a one-off session">
             <form action={createSessionAction} className="grid grid-cols-2 gap-3">
-              <Field label={t("nav.students")} className="col-span-2">
-                <select name="studentId" className="input" multiple size={4}>
-                  {students.map((s) => <option key={s.id} value={s.id}>{s.fullName}</option>)}
-                </select>
-              </Field>
+              <StudentPicker students={students.map((s) => ({ id: s.id, name: s.fullName }))} />
               <Field label={t("common.date")}><input name="date" type="date" className="input" defaultValue={today} required /></Field>
               <Field label={t("common.time")}><input name="time" type="time" className="input" defaultValue="16:00" required /></Field>
-              <Field label={t("common.duration")}><input name="minutes" type="number" className="input" defaultValue={60} step={15} /></Field>
+              <Field label={t("common.duration")}><input name="minutes" type="number" className="input" defaultValue={60} min={15} max={480} step={15} required /></Field>
               <Field label={t("common.mode")}>
                 <select name="mode" className="input"><option value="in_person">{t("common.inPerson")}</option><option value="online">{t("common.online")}</option></select>
               </Field>
               <Field label={t("common.location")} className="col-span-2"><input name="location" className="input" placeholder="Student's home" /></Field>
-              <button className="btn-primary col-span-2" type="submit">{t("common.add")}</button>
+              <PendingButton disabled={!students.length} pendingLabel="Adding lesson…" className="btn-primary col-span-2">{t("common.add")}</PendingButton>
             </form>
           </Card>
           <Card title={t("tutor.blackouts")} subtitle="Sessions inside a blackout are cancelled as tutor-cancelled (never counted).">
@@ -103,16 +101,16 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
               {blackouts.map((b) => (
                 <li key={b.id} className="flex items-center justify-between">
                   <span>{formatDate(b.startDate)} – {formatDate(b.endDate)} · {b.reason}</span>
-                  <form action={blackoutAction}><input type="hidden" name="remove" value={b.id} /><button className="btn-ghost btn-sm" type="submit">{t("common.delete")}</button></form>
+                  <form action={blackoutAction}><input type="hidden" name="remove" value={b.id} /><PendingButton pendingLabel="Updating…" className="btn-ghost btn-sm" type="submit">{t("common.delete")}</PendingButton></form>
                 </li>
               ))}
               {!blackouts.length && <li className="text-mute">{t("common.none")}</li>}
             </ul>
             <form action={blackoutAction} className="grid grid-cols-2 gap-2">
-              <input name="start" type="date" className="input" required />
-              <input name="end" type="date" className="input" />
-              <input name="reason" className="input col-span-2" placeholder="Reason (e.g. Eid break)" required />
-              <button className="btn-secondary col-span-2" type="submit">{t("common.add")}</button>
+              <input aria-label="Blackout start date" name="start" type="date" className="input" required />
+              <input aria-label="Blackout end date" name="end" type="date" className="input" />
+              <input aria-label="Blackout reason" name="reason" className="input col-span-2" placeholder="Reason (e.g. Eid break)" required />
+              <PendingButton pendingLabel="Updating…" className="btn-secondary col-span-2" type="submit">{t("common.add")}</PendingButton>
             </form>
           </Card>
         </div>

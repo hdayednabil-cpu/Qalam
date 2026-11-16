@@ -9,11 +9,11 @@ export default async function ParentLayout({ children }: { children: React.React
   const v = await getViewer("guardian");
   const unread = v.viewingAs ? 0 : (await unreadNotifications(getDb(), v.user.id)).length;
   const items: NavItem[] = [
-    { href: "/parent", label: t("nav.home"), icon: "dashboard" },
-    { href: "/parent/sessions", label: t("nav.sessions"), icon: "sessions" },
-    { href: "/parent/homework", label: t("nav.homework"), icon: "homework" },
+    { href: "/parent", label: t("nav.home"), icon: "dashboard", mobile: true },
+    { href: "/parent/sessions", label: t("nav.sessions"), icon: "sessions", mobile: true },
+    { href: "/parent/homework", label: t("nav.homework"), icon: "homework", mobile: true },
     { href: "/parent/tests", label: t("nav.tests"), icon: "tests" },
-    { href: "/parent/progress", label: t("nav.progress"), icon: "progress" },
+    { href: "/parent/progress", label: t("nav.progress"), icon: "progress", mobile: true },
     { href: "/parent/feedback", label: t("nav.feedback"), icon: "feedback" },
     { href: "/parent/reports", label: t("nav.reports"), icon: "reports" },
     { href: "/parent/inbox", label: t("nav.inbox"), icon: "inbox" },

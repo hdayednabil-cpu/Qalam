@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { PendingButton } from "@/components/pending-button";
+import Link from "@/components/app-link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
@@ -52,7 +53,7 @@ export default async function TestPage({ params }: { params: Promise<{ id: strin
                     <option value="auto">auto ({revisionLabel(tp.status)})</option>
                     {sch.REVISION_STATUS.map((r) => <option key={r} value={r}>{revisionLabel(r)}</option>)}
                   </select>
-                  <button className="btn-secondary btn-sm" type="submit">{t("common.save")}</button>
+                  <PendingButton pendingLabel="Saving…" className="btn-secondary btn-sm" type="submit">{t("common.save")}</PendingButton>
                 </form>
               </div>
             );
@@ -87,7 +88,7 @@ export default async function TestPage({ params }: { params: Promise<{ id: strin
           </Field>
           <Field label="Shared comment (family)"><input name="sharedComment" className="input" defaultValue={a.result?.sharedComment ?? ""} /></Field>
           <Field label="Reflection (private)"><textarea name="reflection" className="input min-h-20" defaultValue={a.result?.reflection ?? ""} /></Field>
-          <button className="btn-primary" type="submit">{t("tutor.recordResult")}</button>
+          <PendingButton pendingLabel="Saving result…" className="btn-primary" type="submit">{t("tutor.recordResult")}</PendingButton>
         </form>
       </Card>
     </div>

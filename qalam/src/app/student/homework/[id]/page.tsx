@@ -1,5 +1,6 @@
+import { PendingButton } from "@/components/pending-button";
 import { MAX_FILE_MB, MAX_PAGES } from "@/lib/upload-limits";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { notFound } from "next/navigation";
 import { getDb } from "@/db";
 import { getViewer } from "@/lib/auth";
@@ -23,7 +24,7 @@ export default async function StudentHomeworkPage({ params }: { params: Promise<
   const { homework: h, view, ws, feedback } = detail;
   const visible = feedback.filter((f) => canSee("student", f.visibility));
   const latest = h.submissions[0];
-  const canSubmit = ["assigned", "in_progress", "corrections_requested", "overdue"].includes(view.effectiveStatus) && view.submissionRequirement !== "none" && !v.viewingAs;
+  const canSubmit = ["assigned", "in_progress", "corrections_requested", "overdue"].includes(view.effectiveStatus) && !v.viewingAs;
   const labels = Object.fromEntries(["uploadPages", "takePhoto", "addPage", "replace", "remove", "moveUp", "moveDown", "submitWork", "resubmit", "commentPlaceholder", "pagesHint", "converting", "uploading", "processingFailed"].map((k) => [k, t(`student.${k}`)]));
   labels.tooLarge = t("student.tooLarge", { mb: MAX_FILE_MB });
   labels.maxPages = t("student.maxPages", { n: MAX_PAGES });
@@ -44,11 +45,11 @@ export default async function StudentHomeworkPage({ params }: { params: Promise<
       ) : null}
 
       {canSubmit && (
-        <Card title={view.effectiveStatus === "corrections_requested" ? t("student.resubmit") : t("student.uploadPages")}>
+        <Card title={view.effectiveStatus === "corrections_requested" ? t("student.resubmit") : h.submissionRequirement === "typed" ? "Write your answer" : h.submissionRequirement === "none" ? "Mark your work ready" : t("student.uploadPages")}>
           {h.status === "assigned" && (
-            <form action={startHomeworkAction} className="mb-3"><input type="hidden" name="homeworkId" value={h.id} /><button className="btn-ghost btn-sm" type="submit">I've started this</button></form>
+            <form action={startHomeworkAction} className="mb-3"><input type="hidden" name="homeworkId" value={h.id} /><PendingButton pendingLabel="Starting…" className="btn-ghost btn-sm" type="submit">I've started this</PendingButton></form>
           )}
-          <SubmitWork homeworkId={h.id} resubmit={view.effectiveStatus === "corrections_requested"} labels={labels} />
+          <SubmitWork requirement={h.submissionRequirement} homeworkId={h.id} resubmit={view.effectiveStatus === "corrections_requested"} labels={labels} />
         </Card>
       )}
 

@@ -1,3 +1,4 @@
+import { PendingButton } from "@/components/pending-button";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
@@ -60,7 +61,7 @@ export default async function NewTestPage({ searchParams }: { searchParams: Prom
             ))}
           </div>
         </Card>
-        <button className="btn-primary" type="submit">{t("tutor.createTest")}</button>
+        <PendingButton pendingLabel="Creating test…" className="btn-primary" type="submit">{t("tutor.createTest")}</PendingButton>
       </form>
     </div>
   );

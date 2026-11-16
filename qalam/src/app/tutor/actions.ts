@@ -98,18 +98,24 @@ export async function reviewAction(fd: FormData) {
   const homeworkId = str(fd, "homeworkId");
   const pageIds = all(fd, "pageId");
   const topicIds = all(fd, "topicId");
-  await m.reviewSubmission(getDb(), user, {
-    homeworkId,
-    submissionId: str(fd, "submissionId"),
-    action: str(fd, "action") === "corrections" ? "corrections" : "approve",
-    feedback: str(fd, "feedback"),
-    feedbackVisibility: (str(fd, "visibility") || "student") as Visibility,
-    score: str(fd, "score"),
-    pageComments: pageIds.map((id) => ({ submissionPageId: id, body: str(fd, `page:${id}`) })),
-    mastery: topicIds.map((id) => ({ enrolmentTopicId: id, level: str(fd, `mastery:${id}`) as Mastery })).filter((x) => x.level),
-  });
+  let changed = false;
+  try {
+    await m.reviewSubmission(getDb(), user, {
+      homeworkId,
+      submissionId: str(fd, "submissionId"),
+      action: str(fd, "action") === "corrections" ? "corrections" : "approve",
+      feedback: str(fd, "feedback"),
+      feedbackVisibility: (str(fd, "visibility") || "student") as Visibility,
+      score: str(fd, "score"),
+      pageComments: pageIds.map((id) => ({ submissionPageId: id, body: str(fd, `page:${id}`) })),
+      mastery: topicIds.map((id) => ({ enrolmentTopicId: id, level: str(fd, `mastery:${id}`) as Mastery })).filter((x) => x.level),
+    });
+  } catch (error) {
+    if (error instanceof m.ReviewConflict) changed = true;
+    else throw error;
+  }
   revalidatePath("/tutor");
-  redirect(`/tutor/homework/${homeworkId}`);
+  redirect(`/tutor/homework/${homeworkId}${changed ? "?reviewChanged=1" : ""}`);
 }
 
 export async function createAssessmentAction(fd: FormData) {

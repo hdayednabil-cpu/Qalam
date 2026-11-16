@@ -29,7 +29,7 @@ export function PasswordForm() {
       </label>
       <p id="password-help" className="text-sm text-mute">Use a unique password with at least 12 characters. A few unrelated words work well.</p>
       {state.error && <p role="alert" className="rounded-xl bg-coral-100 px-3 py-2 text-sm text-coral-700">{errors[state.error] ?? errors.unavailable}</p>}
-      <button type="submit" className="btn-primary w-full" disabled={pending}>{pending ? "Changing password…" : "Change password and sign out"}</button>
+      <button type="submit" className="btn-primary w-full" disabled={pending} aria-busy={pending}><span role={pending ? "status" : undefined}>{pending ? "Changing password…" : "Change password and sign out"}</span></button>
     </form>
   );
 }

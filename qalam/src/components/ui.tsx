@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import type { ReactNode } from "react";
 import type { Mastery } from "@/db/schema";
 import { MASTERY_TONE } from "@/lib/domain";
@@ -6,7 +6,7 @@ import { masteryLabel, statusLabel } from "@/lib/i18n";
 
 export type Tone = "neutral" | "danger" | "warn" | "info" | "success" | "brand";
 const toneClass: Record<Tone, string> = {
-  neutral: "bg-stone-100 text-stone-700",
+  neutral: "bg-slate-100 text-slate-600",
   danger: "bg-coral-100 text-coral-700",
   warn: "bg-saffron-100 text-saffron-700",
   info: "bg-sky-100 text-sky-700",
@@ -19,13 +19,13 @@ export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
 }
 
-export function Card({ children, className, title, action, subtitle, padded = true }: { children: ReactNode; className?: string; title?: ReactNode; action?: ReactNode; subtitle?: ReactNode; padded?: boolean }) {
+export function Card({ children, className, title, action, subtitle, id, padded = true }: { children: ReactNode; className?: string; title?: ReactNode; action?: ReactNode; subtitle?: ReactNode; id?: string; padded?: boolean }) {
   return (
-    <section className={cx("card", padded && "p-5", className)}>
+    <section id={id} className={cx("card scroll-mt-24", padded && "p-5 sm:p-6", className)}>
       {(title || action) && (
-        <header className={cx("flex items-start justify-between gap-3", padded ? "mb-4" : "px-5 pt-5 mb-3")}>
+        <header className={cx("flex flex-wrap items-start justify-between gap-3", padded ? "mb-5" : "px-5 pt-5 mb-3")}>
           <div>
-            {title && <h2 className="text-base font-semibold text-ink-900">{title}</h2>}
+            {title && <h2 className="text-[15px] font-bold text-ink-900">{title}</h2>}
             {subtitle && <p className="text-sm text-mute mt-0.5">{subtitle}</p>}
           </div>
           {action && <div className="shrink-0">{action}</div>}
@@ -37,7 +37,7 @@ export function Card({ children, className, title, action, subtitle, padded = tr
 }
 
 export function Badge({ tone = "neutral", children, className }: { tone?: Tone; children: ReactNode; className?: string }) {
-  return <span className={cx("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap", toneClass[tone], className)}>{children}</span>;
+  return <span className={cx("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap", toneClass[tone], className)}>{children}</span>;
 }
 
 export const statusTone: Record<string, Tone> = {
@@ -70,7 +70,7 @@ export function Progress({ value, tone = "brand", className, label }: { value: n
           <span className="tabular-nums">{value}%</span>
         </div>
       )}
-      <div className="h-2 w-full rounded-full bg-stone-200/70 overflow-hidden">
+      <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
         <div className={cx("h-full rounded-full transition-all", toneBar[tone])} style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
       </div>
     </div>
@@ -80,11 +80,11 @@ export function Progress({ value, tone = "brand", className, label }: { value: n
 export function Ring({ value, size = 64, stroke = 7, tone = "brand", children }: { value: number; size?: number; stroke?: number; tone?: Tone; children?: ReactNode }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
-  const colour = { neutral: "#a8a29e", danger: "#c6603c", warn: "#cd9d43", info: "#5c8286", success: "#718a5a", brand: "#664f36" }[tone];
+  const colour = { neutral: "#94a3b8", danger: "var(--color-coral-500)", warn: "var(--color-saffron-400)", info: "var(--color-sky-500)", success: "var(--color-moss-500)", brand: "var(--color-ink-500)" }[tone];
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} stroke="#e8dfcc" strokeWidth={stroke} fill="none" />
+        <circle cx={size / 2} cy={size / 2} r={r} stroke="var(--color-line)" strokeWidth={stroke} fill="none" />
         <circle cx={size / 2} cy={size / 2} r={r} stroke={colour} strokeWidth={stroke} fill="none" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c - (c * Math.max(0, Math.min(100, value))) / 100} />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center text-sm font-semibold tabular-nums">{children ?? `${value}%`}</div>
@@ -101,7 +101,7 @@ export function Avatar({ name, hue = 210, size = 40, className }: { name: string
     .join("")
     .toUpperCase();
   return (
-    <div className={cx("inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white", className)} style={{ width: size, height: size, fontSize: size * 0.38, background: `linear-gradient(135deg, hsl(${hue} 55% 45%), hsl(${(hue + 30) % 360} 60% 35%))` }}>
+    <div className={cx("inline-flex shrink-0 items-center justify-center rounded-xl font-semibold", className)} style={{ width: size, height: size, fontSize: size * 0.38, background: `hsl(${hue} 40% 93%)`, color: `hsl(${hue} 35% 32%)` }}>
       {initials}
     </div>
   );
@@ -109,21 +109,20 @@ export function Avatar({ name, hue = 210, size = 40, className }: { name: string
 
 export function EmptyState({ children, icon }: { children: ReactNode; icon?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line py-8 text-center text-sm text-mute">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-xl bg-paper/80 px-5 py-9 text-center text-sm leading-relaxed text-mute">
       {icon}
       <p className="max-w-xs">{children}</p>
     </div>
   );
 }
 
-export function Stat({ label, value, hint, tone }: { label: string; value: ReactNode; hint?: ReactNode; tone?: Tone }) {
-  return (
-    <div className="card p-4">
-      <div className="label">{label}</div>
-      <div className={cx("mt-1 text-2xl font-semibold display tabular-nums", tone === "danger" && "text-coral-600", tone === "warn" && "text-saffron-600", tone === "success" && "text-moss-600")}>{value}</div>
-      {hint && <div className="text-xs text-mute mt-0.5">{hint}</div>}
-    </div>
-  );
+export function Stat({ label, value, hint, tone, href }: { label: string; value: ReactNode; hint?: ReactNode; tone?: Tone; href?: string }) {
+  const content = <>
+    <div className="flex items-start justify-between gap-2 text-xs font-medium text-mute"><span>{label}</span>{href && <span aria-hidden="true" className="text-ink-500">↗</span>}</div>
+    <div className={cx("mt-3 text-3xl font-semibold display tracking-tight tabular-nums", tone === "danger" && "text-coral-600", tone === "warn" && "text-saffron-600", tone === "success" && "text-moss-600")}>{value}</div>
+    {hint && <div className="mt-2 text-xs leading-relaxed text-mute">{hint}</div>}
+  </>;
+  return href ? <Link href={href} className="card stat-link block h-full p-4 sm:p-5">{content}</Link> : <div className="card h-full p-4 sm:p-5">{content}</div>;
 }
 
 export function Field({ label, children, hint, className }: { label: ReactNode; children: ReactNode; hint?: ReactNode; className?: string }) {
@@ -138,20 +137,20 @@ export function Field({ label, children, hint, className }: { label: ReactNode; 
 
 export function PageHeader({ title, subtitle, action, eyebrow }: { title: ReactNode; subtitle?: ReactNode; action?: ReactNode; eyebrow?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
       <div>
         {eyebrow && <div className="label mb-1">{eyebrow}</div>}
-        <h1 className="text-2xl md:text-3xl font-semibold text-ink-900">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-mute max-w-2xl">{subtitle}</p>}
+        <h1 className="text-[28px] md:text-[34px] font-bold leading-tight text-ink-900">{title}</h1>
+        {subtitle && <p className="mt-2 text-sm leading-relaxed text-mute max-w-2xl">{subtitle}</p>}
       </div>
       {action && <div className="flex flex-wrap gap-2">{action}</div>}
     </div>
   );
 }
 
-export function LinkButton({ href, children, variant = "secondary", className }: { href: string; children: ReactNode; variant?: "primary" | "secondary" | "ghost" | "accent"; className?: string }) {
+export function LinkButton({ href, children, variant = "secondary", className, ariaLabel }: { href: string; children: ReactNode; variant?: "primary" | "secondary" | "ghost" | "accent"; className?: string; ariaLabel?: string }) {
   return (
-    <Link href={href} className={cx(`btn-${variant}`, className)}>
+    <Link href={href} aria-label={ariaLabel} className={cx(`btn-${variant}`, className)}>
       {children}
     </Link>
   );

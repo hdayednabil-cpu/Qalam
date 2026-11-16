@@ -1,10 +1,11 @@
-import Link from "next/link";
+import { PendingButton } from "@/components/pending-button";
+import Link from "@/components/app-link";
 import { redirect } from "next/navigation";
 import { getCurrentUser, homeFor } from "@/lib/auth";
 import { t } from "@/lib/i18n";
 import { Wordmark } from "@/components/shell";
-import { OrreryHero } from "@/components/orrery";
-import { AmbientBackground } from "@/components/ambient-background";
+import { ArrowUpRight } from "lucide-react";
+import { AmbientVideo } from "@/components/ambient-video";
 import { LoginForm } from "./login-form";
 import { demoLogin } from "./actions";
 import { bootstrapTutor, demoEnabled } from "@/lib/bootstrap";
@@ -16,43 +17,31 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const demo = demoEnabled();
   const passwordChanged = (await searchParams).passwordChanged === "1";
   return (
-    <div className="min-h-dvh grid bg-paper lg:grid-cols-[1.15fr_1fr]">
-      <div className="relative isolate hidden overflow-hidden text-white lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <AmbientBackground variant="dark" />
-        <Link href="#" className="relative z-10 fade-up w-fit">
-          <Wordmark className="text-white" />
-        </Link>
-        <div className="relative z-10 flex flex-col items-start gap-8">
-          <div className="fade-up fade-up-1">
-            <OrreryHero size={200} />
-          </div>
-          <div className="fade-up fade-up-2 max-w-md">
-            <p className="label mb-3 text-saffron-300">Private tutoring, run properly</p>
-            <h1 className="text-4xl leading-[1.05] font-medium text-white md:text-5xl">{t("app.tagline")}</h1>
-            <p className="mt-5 max-w-md leading-relaxed text-white/70">
-              Sessions, homework, curriculum coverage and revision plans for a private tutoring practice — one calm place for the tutor, the student and the family.
-            </p>
-          </div>
+    <div className="min-h-dvh grid bg-surface lg:grid-cols-[1fr_1fr]">
+      <div className="login-art relative isolate flex flex-col justify-between overflow-hidden p-6 text-white sm:p-8 lg:min-h-[760px] lg:p-12 xl:p-16">
+        <AmbientVideo artwork="welcome" className="welcome-film" />
+        <div className="welcome-film-shade" aria-hidden="true" />
+        <div className="relative z-10 flex items-center justify-between"><Wordmark /><span className="text-[10px] uppercase tracking-[.18em] text-slate-400">The learning workspace</span></div>
+        <div className="relative z-10 pt-16 lg:pb-12 lg:pt-72">
+          <p className="relative mb-3 text-[10px] font-semibold uppercase tracking-[.2em] text-ink-200">Clarity for every lesson</p>
+          <h1 className="relative max-w-lg text-[28px] lg:text-[48px] font-semibold leading-[1.08] tracking-[-.055em] xl:text-[58px]">Small steps.<br /><span className="text-[#a5f5e0]">Lasting progress.</span></h1>
+          <p className="relative mt-5 hidden max-w-sm text-sm lg:block leading-7 text-slate-300">A thoughtful space for lessons, homework and everything you’re working towards. Together.</p>
         </div>
-        <p className="relative z-10 fade-up fade-up-3 text-xs tracking-wide text-white/45">Doha · Asia/Qatar · week starts Sunday</p>
+        <div className="relative z-10 hidden items-center justify-between border-t lg:flex border-white/10 pt-5 text-[11px] text-slate-400"><span>Tutor. Student. Family.</span><span>Connected by Qalam <ArrowUpRight size={12} className="ml-1 inline" /></span></div>
       </div>
-      <div className="flex items-center justify-center p-6">
-        <div className="fade-up w-full max-w-sm">
-          <div className="mb-8 lg:hidden">
-            <Wordmark />
-          </div>
-          <h2 className="mb-1 text-2xl font-semibold">{t("auth.welcomeBack")}</h2>
-          <p className="mb-6 text-sm text-mute">{t("auth.signIn")}</p>
+      <div className="relative flex flex-col justify-center px-6 py-8 sm:px-12 lg:py-12">
+        <div className="mx-auto w-full max-w-[370px]">
+          <div className="mb-8"><p className="label mb-3 text-ink-600">Your next chapter</p><h2 className="text-[34px] font-bold leading-tight">{t("auth.welcomeBack")}</h2><p className="mt-3 text-sm leading-6 text-mute">Sign in to pick up where you left off.</p></div>
           {passwordChanged && <p role="status" className="mb-4 rounded-xl bg-moss-100 px-3 py-2 text-sm text-moss-700">Your password has been changed and all sessions signed out. Sign in with your new password.</p>}
           <LoginForm labels={{ identifier: t("auth.identifier"), password: t("auth.password"), signIn: t("auth.signIn"), invalid: t("auth.invalid"), throttled: t("auth.tooManyAttempts") }} />
           <p className="mt-3 text-xs text-mute">{t("auth.forgot")}</p>
-          <div className="mt-6 border-t border-line pt-5 text-sm">
-            <Link href="/activate" className="font-medium text-ink-700 hover:underline">
+          <div className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-6 text-sm">
+            <Link href="/activate" className="font-semibold text-ink-600 hover:underline">
               {t("auth.haveCode")} →
             </Link>
           </div>
           {demo && (
-            <div className="mt-6 rounded-2xl border border-saffron-300/60 bg-gradient-to-br from-saffron-100/70 via-surface to-surface p-4 shadow-card">
+            <div className="mt-6 rounded-2xl border border-line bg-paper p-4 shadow-card">
               <div className="label mb-2 flex items-center gap-1.5">
                 <span className="inline-block size-1.5 rounded-full bg-saffron-500" />
                 {t("auth.demoTitle")}
@@ -61,9 +50,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                 {(["tutor", "parent", "student"] as const).map((who) => (
                   <form key={who} action={demoLogin}>
                     <input type="hidden" name="who" value={who} />
-                    <button className="btn-secondary w-full bg-white" type="submit">
+                    <PendingButton pendingLabel="Signing in…" className="btn-secondary w-full bg-white" type="submit">
                       {t(who === "tutor" ? "auth.demoTutor" : who === "parent" ? "auth.demoParent" : "auth.demoStudent")}
-                    </button>
+                    </PendingButton>
                   </form>
                 ))}
               </div>
