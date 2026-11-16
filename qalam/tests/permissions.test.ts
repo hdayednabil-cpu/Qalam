@@ -134,7 +134,7 @@ describe("package counting", () => {
     expect(packageUsage(8, [{ status: "completed", startsAt: base, cancelledAt: null, countsAgainstPackage: null }], 24).remaining).toBe(7);
   });
   it("marks a package low when two sessions remain", () => {
-    const completed = Array.from({ length: 6 }, () => ({ status: "completed", startsAt: base, cancelledAt: null, countsAgainstPackage: null }));
+    const completed = Array.from({ length: 6 }, () => ({ status: "completed" as const, startsAt: base, cancelledAt: null, countsAgainstPackage: null }));
     expect(packageUsage(8, completed, 24)).toEqual({ total: 8, used: 6, remaining: 2, scheduled: 0, low: true });
   });
   it("reports current seeded package usage without assuming today's schedule", async () => {
